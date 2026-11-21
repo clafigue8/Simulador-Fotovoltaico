@@ -2,9 +2,9 @@
 
 Simulador interactivo de un sistema fotovoltaico aislado, desde la celda hasta el arreglo completo con batería, controlador de carga y consumo. Hecho para el Seminario de Investigación de Ingeniería Eléctrica de la UNAH.
 
-**▶ Abrir el simulador:** https://clafigue8.github.io/Simulador-Fotovoltaico/
+**▶ Abrir el simulador:** https://simuladorfotovoltaico.online/
 
-*English version:* https://clafigue8.github.io/Simulador-Fotovoltaico/?lang=en · [Read in English](#english)
+*English version:* https://simuladorfotovoltaico.online/?lang=en · [Read in English](#english)
 
 ![Esquema del sistema con sombra lateral sobre un módulo](docs/captura.png)
 
@@ -36,7 +36,7 @@ No necesita instalación. Abre el enlace de arriba o descarga `index.html` y áb
 
 Interactive simulator of a stand-alone photovoltaic system, from a single cell up to the full array with battery, charge controller and load. Built for the Research Seminar of Electrical Engineering at UNAH (Honduras).
 
-**▶ Open the simulator:** https://clafigue8.github.io/Simulador-Fotovoltaico/?lang=en
+**▶ Open the simulator:** https://simuladorfotovoltaico.online/?lang=en
 
 - **Single-diode cell model** with irradiance and temperature dependence.
 - **Full hierarchy:** cell → module → string → array; add or remove cell rows/columns, bypass groups, modules and strings.
