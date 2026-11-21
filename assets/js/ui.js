@@ -97,15 +97,15 @@
 
   /* ======================= Navegación ======================= */
   const TABS = [
-    ['home', 'Inicio', 'Home'], ['gen', 'Generador FV', 'PV generator'], ['iv', 'Curvas y MPPT', 'Curves & MPPT'], ['site', 'Sitio y clima', 'Site & weather'],
+    ['home', 'Inicio', 'Home'], ['mount', 'Montaje y diagrama', 'Installation & diagram'], ['gen', 'Generador FV', 'PV generator'], ['iv', 'Curvas y MPPT', 'Curves & MPPT'], ['site', 'Sitio y clima', 'Site & weather'],
     ['bat', 'Baterías', 'Batteries'], ['conv', 'Conversión y distribución', 'Conversion & distribution'], ['grid', 'Red eléctrica', 'Power grid'],
-    ['sim', 'Simulación', 'Simulation'], ['about', 'Metodología', 'Methodology'], ['install', 'Normativa e instalación', 'Regulations & installation']
+    ['sim', 'Simulación', 'Simulation'], ['about', 'Metodología', 'Methodology'], ['install', 'Normativa y equipos', 'Regulations & equipment']
   ];
   function renderTabs() {
     $('tabs').innerHTML = TABS.map(([k, es, en], i) => `<button class="tab ${S.tab === k ? 'on' : ''}" data-tab="${k}"><span class="n">${i + 1}</span>${L(es, en)}</button>`).join('');
     $('tabs').querySelectorAll('.tab').forEach(b => b.onclick = () => go(b.dataset.tab));
     document.querySelectorAll('.page').forEach(p => p.classList.toggle('on', p.id === 'p-' + S.tab));
-    document.querySelector('.summary').style.display = S.tab === 'home' || S.tab === 'grid' || S.tab === 'install' ? 'none' : '';
+    document.querySelector('.summary').style.display = ['home', 'grid', 'install', 'mount'].includes(S.tab) ? 'none' : '';
   }
   function go(tab) { S.tab = tab; try { history.replaceState(null, '', '#' + tab + (LANG === 'en' ? '?lang=en' : '')); } catch (e) { } renderTabs(); renderPage(); window.scrollTo({ top: 0 }); }
 
@@ -546,6 +546,7 @@
     const ticks = [[90, 'E'], [135, 'SE'], [180, 'S'], [225, L('SO', 'SW')], [270, L('O', 'W')]].map(([a, l]) => `<text x="${X(a)}" y="${gy + 24}" text-anchor="middle" font-size="12" fill="#5d6b80">${l}</text>`).join('');
     $('scene').innerHTML = `<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${top}"/><stop offset="1" stop-color="${bot}"/></linearGradient><radialGradient id="glow"><stop offset="0" stop-color="#ffe7a8" stop-opacity=".9"/><stop offset="1" stop-color="#ffe7a8" stop-opacity="0"/></radialGradient></defs>
       <rect width="${W}" height="${gy}" fill="url(#sky)"/>${stars}
+      ${e < -4 ? `<g opacity="${Math.min(1, (-e - 4) / 8)}"><circle cx="${W - X(sp.az)}" cy="${Math.max(50, Y(Math.min(55, -e * 0.9 + 20)))}" r="13" fill="#eef2f8"/><circle cx="${W - X(sp.az) + 6}" cy="${Math.max(50, Y(Math.min(55, -e * 0.9 + 20))) - 3}" r="11" fill="${top}"/></g>` : ''}
       <polyline points="${path}" fill="none" stroke="${day > 0.5 ? '#c98a1b' : '#c9b488'}" stroke-dasharray="3 4" stroke-width="1.3"/>
       ${e > -6 ? `<circle cx="${sunX}" cy="${sunY}" r="${34 * glow + 6}" fill="url(#glow)"/><circle cx="${sunX}" cy="${sunY}" r="11" fill="${e > 0 ? '#e8b84a' : '#c9864a'}" stroke="#fff3cf" stroke-width="1.5"/>` : ''}
       ${cloud > 0.25 && e > 0 ? `<g opacity="${Math.min(0.9, cloud)}" fill="#eef1f5"><ellipse cx="${sunX - 18}" cy="${sunY + 6}" rx="34" ry="13"/><ellipse cx="${sunX + 14}" cy="${sunY + 2}" rx="28" ry="15"/></g>` : ''}
@@ -820,7 +821,7 @@
   function renderPage() {
     stopPlay();
     const ext = window.PAGES_EXT || {};
-    ({ gen: pageGen, iv: pageIV, site: pageSite, bat: pageBat, conv: pageConv, sim: pageSim, about: pageAbout, home: ext.home, grid: ext.grid, install: ext.install })[S.tab]();
+    ({ gen: pageGen, iv: pageIV, site: pageSite, bat: pageBat, conv: pageConv, sim: pageSim, about: pageAbout, home: ext.home, grid: ext.grid, install: ext.install, mount: ext.mount })[S.tab]();
   }
   function refresh() {
     ensure(); compute(); renderSummary();
@@ -847,7 +848,8 @@
     let l = null; try { l = new URL(location.href).searchParams.get('lang'); } catch (e) { }
     if (!l) { try { l = localStorage.getItem('lang'); } catch (e) { } }
     if (!l) l = (navigator.language || 'es').toLowerCase().startsWith('es') ? 'es' : 'en';
-    const h = (location.hash || '').slice(1).split('?')[0]; if (TABS.some(t => t[0] === h)) S.tab = h;
+    S.tab = 'home';   // la página siempre abre en Inicio con la vista 3D
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { }
     LANG = l === 'en' ? 'en' : 'es';
     applyModule();
     loadTmy().finally(() => setLang(LANG));

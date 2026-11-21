@@ -59,21 +59,21 @@
   }
 
   /* ---------- Página ---------- */
-  EXT.install = function () {
+  /* ---------- Páginas ---------- */
+  function page(id, title, sub, kind) {
     const st = EXT.homeState && EXT.homeState();
-    $('p-install').innerHTML = `<div class="intro"><h2>${L('Normativa e instalación', 'Regulations and installation')}</h2><p>${L('Cómo quedaría montado el sistema diseñado en Inicio: requisitos legales, protecciones, conductores, diagrama unifilar y equipos sugeridos.', 'How the system designed on Home would be installed: legal requirements, protections, conductors, single-line diagram and suggested equipment.')}</p></div><div id="instBody"><p class="note">${L('Calculando…', 'Computing…')}</p></div>`;
-    const go = () => { const c = EXT.homeState().calc || EXT.homeCompute(); render(c); };
+    $(id).innerHTML = `<div class="intro"><h2>${title}</h2><p>${sub}</p></div><div id="${id}-b"><p class="note">${L('Calculando…', 'Computing…')}</p></div>`;
+    const go = () => { const c = EXT.homeState().calc || EXT.homeCompute(); render(c, kind, id + '-b'); };
     if (st && st.calc) go(); else A().loadTmy().then(go);
-  };
+  }
+  EXT.mount = () => page('p-mount', L('Montaje e instalación', 'Mounting and installation'), L('Cómo quedaría montado el sistema que diseñaste en Inicio: equipos, recorrido de la energía, protecciones y conductores.', 'How the system you designed on Home would be installed: equipment, energy path, protections and conductors.'), 'mount');
+  EXT.install = () => page('p-install', L('Normativa y equipos', 'Regulations and equipment'), L('Lo que exige la ley hondureña para tu sistema y los equipos sugeridos para instalarlo.', 'What Honduran law requires for your system and suggested equipment to install it.'), 'law');
   let sc3 = null;
-  function render(c) {
+  function render(c, kind, target) {
     const d = design(c), b = brands(), esc = A().esc, kpi = A().kpi, inv = c.inv;
-    const law = EXT.lawChecks(c);
-    const okN = law.filter(x => !x.info && x.ok).length, totN = law.filter(x => !x.info).length;
-    $('instBody').innerHTML = `
-      <div class="card"><div class="chead"><div><h3>${L('Lo que dice la ley en Honduras', 'What Honduran law says')}</h3><p class="sub">${L('Usuarios autoproductores conectados a la red de distribución.', 'Self-generating users connected to the distribution network.')}</p></div><span class="badge ${okN === totN ? 'ok' : 'bad'}">${okN}/${totN} ${L('requisitos cumplidos', 'requirements met')}</span></div>
-        <ul class="checks cols2">${law.map(x => `<li class="${x.info ? 'info' : x.ok ? 'ok' : x.warn ? 'warn' : 'bad'}"><i>${x.info ? 'i' : x.ok ? '✓' : '!'}</i><div><b>${x.t}</b><span>${x.d}</span></div></li>`).join('')}</ul></div>
-      <div class="card" style="margin-top:24px"><div class="chead"><div><h3>${L('Montaje del sistema en 3D', 'System installation in 3D')}</h3><p class="sub">${L('Recorrido de la energía: paneles → caja de protecciones CC → inversor → protecciones CA → tablero → medidor bidireccional → red de la ENEE.', 'Energy path: panels → DC protection box → inverter → AC protections → panelboard → bidirectional meter → ENEE grid.')}</p></div></div>
+    if (kind === 'mount') {
+      $(target).innerHTML = `
+      <div class="card"><div class="chead"><div><h3>${L('Montaje del sistema en 3D', 'System installation in 3D')}</h3><p class="sub">${L('Recorrido de la energía: paneles → caja de protecciones CC → inversor → protecciones CA → tablero → medidor bidireccional → red de la ENEE.', 'Energy path: panels → DC protection box → inverter → AC protections → panelboard → bidirectional meter → ENEE grid.')}</p></div></div>
         <div class="inst3d"><div id="inst3d" class="c3d"></div><p class="hint">${L('Arrastra para girar · rueda o pellizco para acercar', 'Drag to rotate · scroll or pinch to zoom')}</p></div></div>
       <div class="card" style="margin-top:24px"><h3>${L('Diagrama unifilar', 'Single-line diagram')}</h3><p class="sub">${L('Protecciones y conductores calculados con los criterios del NEC (NFPA 70), artículos 690, 705 y 250.', 'Protections and conductors sized with NEC (NFPA 70) criteria, articles 690, 705 and 250.')}</p><div style="overflow-x:auto" id="sld2"></div></div>
       <div class="grid g-2" style="margin-top:24px">
@@ -93,13 +93,23 @@
           <tr><td>${L('DPS CA', 'AC SPD')}</td><td>${L('Tipo 2', 'Type 2')}, U<sub>c</sub> ≥ ${d.SPDac} V</td></tr>
           <tr><td>${L('Puesta a tierra', 'Grounding')}</td><td>${L('Varilla 5/8" × 8 pies, conductor', '5/8" × 8 ft rod, conductor')} ${d.egcMain} AWG</td></tr>
         </tbody></table></div><p class="note">${L('Valores orientativos para un anteproyecto. El diseño final debe verificar las fichas técnicas (fusible máximo en serie del módulo, corrientes del inversor) y lo firma un ingeniero electricista colegiado.', 'Indicative values for a preliminary design. The final design must check the datasheets (module maximum series fuse, inverter currents) and be signed by a licensed electrical engineer.')}</p></div>
-        <div class="card"><h3>${L('Paneles de última generación (2026)', 'Latest-generation panels (2026)')}</h3><p class="sub">${L('Modelos de fabricantes de primer nivel según publicaciones de 2026; las cifras varían entre fuentes, verifica la ficha técnica.', 'Tier‑1 manufacturer models according to 2026 publications; figures vary between sources, check the datasheet.')}</p>
+        <div class="card"><h3>${L('Resumen del sistema', 'System summary')}</h3><div class="kpis">${kpi(L('Paneles', 'Panels'), c.n)}${kpi(L('Potencia', 'Power'), fx(c.kWp, 2), 'kWp')}${kpi(L('Inversor', 'Inverter'), c.nInv + ' ×', esc(inv.name.split(' (')[0]))}${kpi(L('Potencia CA', 'AC power'), fx(c.kWac, 2), 'kW')}</div>
+          <p class="note">${L('Para cambiar el diseño, vuelve a Inicio. Las marcas sugeridas y la revisión legal están en la última pestaña.', 'To change the design, go back to Home. Suggested brands and the legal review are in the last tab.')}</p><div class="btns" style="margin-top:12px"><button class="btn" data-go3="home">${L('← Cambiar el diseño', '← Change the design')}</button><button class="btn pri" data-go3="install">${L('Normativa y equipos →', 'Regulations and equipment →')}</button></div></div>
+      </div>`;
+      $(target).querySelectorAll('[data-go3]').forEach(x => x.onclick = () => A().go(x.dataset.go3));
+      drawSLD(c, d); init3d(c, d); return;
+    }
+    const law = EXT.lawChecks(c);
+    const okN = law.filter(x => !x.info && x.ok).length, totN = law.filter(x => !x.info).length;
+    $(target).innerHTML = `
+      <div class="card"><div class="chead"><div><h3>${L('Lo que dice la ley en Honduras', 'What Honduran law says')}</h3><p class="sub">${L('Usuarios autoproductores conectados a la red de distribución.', 'Self-generating users connected to the distribution network.')}</p></div><span class="badge ${okN === totN ? 'ok' : 'bad'}">${okN}/${totN} ${L('requisitos cumplidos', 'requirements met')}</span></div>
+        <ul class="checks cols2">${law.map(x => `<li class="${x.info ? 'info' : x.ok ? 'ok' : x.warn ? 'warn' : 'bad'}"><i>${x.info ? 'i' : x.ok ? '✓' : '!'}</i><div><b>${x.t}</b><span>${x.d}</span></div></li>`).join('')}</ul></div>
+      <div class="grid g-2" style="margin-top:24px">
+        <div class="card" style="grid-column:1/-1"><h3>${L('Paneles de última generación (2026)', 'Latest-generation panels (2026)')}</h3><p class="sub">${L('Modelos de fabricantes de primer nivel según publicaciones de 2026; las cifras varían entre fuentes, verifica la ficha técnica.', 'Tier‑1 manufacturer models according to 2026 publications; figures vary between sources, check the datasheet.')}</p>
           <table class="t"><thead><tr><th>${L('Marca', 'Brand')}</th><th>${L('Modelo', 'Model')}</th><th>${L('Potencia · eficiencia', 'Power · efficiency')}</th></tr></thead><tbody>${b.panels.map(r => `<tr><td><b>${r[0]}</b></td><td style="text-align:left;white-space:normal">${r[1]}</td><td style="white-space:normal">${r[2]}</td></tr>`).join('')}</tbody></table>
           <p class="note">${L('Los módulos de la simulación detallada vienen de la base de datos CEC (2019) porque incluyen los parámetros verificados de hoja técnica; los de esta tabla son las versiones actuales del mercado.', 'Modules in the detailed simulation come from the CEC database (2019) because it includes verified datasheet parameters; the ones in this table are current market versions.')}</p></div>
       </div>
       <div class="card" style="margin-top:24px"><h3>${L('Cableado, protecciones y demás dispositivos', 'Wiring, protections and other devices')}</h3><div class="tscroll"><table class="t"><thead><tr><th>${L('Dispositivo', 'Device')}</th><th style="text-align:left">${L('Qué pedir', 'What to ask for')}</th><th style="text-align:left">${L('Marcas de referencia', 'Reference brands')}</th></tr></thead><tbody>${b.bos.map(r => `<tr><td><b>${r[0]}</b></td><td style="text-align:left;white-space:normal">${r[1]}</td><td style="text-align:left;white-space:normal">${r[2]}</td></tr>`).join('')}</tbody></table></div></div>`;
-    drawSLD(c, d);
-    init3d(c, d);
   }
 
   /* ---------- Diagrama unifilar (SVG) ---------- */
@@ -117,16 +127,16 @@
     const cab = (x1, x2, t1, t2, col) => line(x1, x2, col) + T((x1 + x2) / 2, y - 10, t1, { s: 11, c: 'var(--muted)' }) + (t2 ? T((x1 + x2) / 2, y + 22, t2, { s: 11, c: 'var(--muted)' }) : '');
     const boxEl = (x0, w, title, lines, col) => `<rect x="${x0}" y="${y - 45}" width="${w}" height="90" rx="8" fill="var(--surface2)" stroke="${col}" stroke-width="2"/>` + T(x0 + w / 2, y - 22, title, { w: 700, s: 13 }) + lines.map((t, i) => T(x0 + w / 2, y + i * 16, t, { s: 11.5, c: 'var(--muted)' })).join('');
     if (!d.micro) {
-      h += cab(x, 200, 'CC +/−', `${d.dcAwg} AWG PV`, 'var(--s2)');
+      h += cab(x, 200, L('CC +/−', 'DC +/−'), `${d.dcAwg} AWG PV`, 'var(--s2)');
       h += boxEl(200, 150, L('Caja de CC', 'DC box'), [d.fuse ? `gPV ${d.fuse} A` : L('sin fusibles', 'no fuses'), `DPS CC ${d.SPDdc} V`, `${L('Seccionador', 'Isolator')} ${d.dcIso.I} A`], 'var(--s2)');
-      h += cab(350, 420, 'CC', `${fx(d.VocMax, 0)} V máx.`, 'var(--s2)');
+      h += cab(350, 420, L('CC', 'DC'), `${fx(d.VocMax, 0)} V máx.`, 'var(--s2)');
     } else h += cab(x, 420, L('CA (cable troncal)', 'AC (trunk cable)'), `${d.branch.n} × 20 A`, 'var(--s1)');
     h += boxEl(420, 180, L('Inversor', 'Inverter'), [`${c.nInv} × ${esc(inv.name.split(' (')[0])}`, `${fx(c.kWac, 2)} kW · ${inv.Vac} V${d.ph3 ? ' 3φ' : ''}`, L('anti‑isla · MPPT', 'anti‑islanding · MPPT')], 'var(--s5)');
     // símbolo de inversor
     h += `<g transform="translate(588,${y - 40})"><rect width="0" height="0"/></g>`;
-    h += cab(600, 680, 'CA', `${d.acAwg} AWG`, 'var(--s1)');
+    h += cab(600, 680, L('CA', 'AC'), `${d.acAwg} AWG`, 'var(--s1)');
     h += boxEl(680, 150, L('Protección CA', 'AC protection'), [`${L('Interruptor', 'Breaker')} ${d.ocpd} A ${d.ph3 ? '3P' : '2P'}`, `DPS CA ${d.SPDac} V`, L('Seccionador visible', 'Visible disconnect')], 'var(--s1)');
-    h += cab(830, 900, 'CA', `${d.mainAwg} AWG`, 'var(--s1)');
+    h += cab(830, 900, L('CA', 'AC'), `${d.mainAwg} AWG`, 'var(--s1)');
     h += boxEl(900, 150, L('Tablero principal', 'Main panelboard'), [`${L('Interruptor FV', 'PV breaker')} ${d.mainOcpd} A`, L('Cargas de la casa', 'Building loads'), L('Barra de tierra', 'Ground bar')], 'var(--s3)');
     h += cab(1050, 1110, '', '', 'var(--s1)');
     // medidor

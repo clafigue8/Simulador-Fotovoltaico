@@ -163,7 +163,7 @@
       <div class="hero">
         <div class="hero3d card" id="h3d"><div id="h3dc" class="c3d"></div>
           <div class="hud" id="hud"></div>
-          <div class="hctl"><button class="btn pri sm" id="hPlay">▶</button><input type="range" id="hHour" min="5" max="19" step="0.05" value="${HOME.hour}" aria-label="${L('Hora del día', 'Time of day')}"><select class="inp" id="hMonth" style="width:120px;font-family:var(--sans)">${L('Enero Febrero Marzo Abril Mayo Junio Julio Agosto Septiembre Octubre Noviembre Diciembre', 'January February March April May June July August September October November December').split(' ').map((n, i) => `<option value="${i}" ${i === HOME.month ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+          <div class="hctl"><button class="btn pri sm" id="hPlay">▶</button><input type="range" id="hHour" min="0" max="24" step="0.05" value="${HOME.hour}" aria-label="${L('Hora del día', 'Time of day')}"><select class="inp" id="hMonth" style="width:120px;font-family:var(--sans)">${L('Enero Febrero Marzo Abril Mayo Junio Julio Agosto Septiembre Octubre Noviembre Diciembre', 'January February March April May June July August September October November December').split(' ').map((n, i) => `<option value="${i}" ${i === HOME.month ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
           <p class="hint">${L('Arrastra para girar · rueda o pellizco para acercar', 'Drag to rotate · scroll or pinch to zoom')}</p>
         </div>
         <div class="card wiz">
@@ -195,7 +195,7 @@
           </details>
         </div>
         <div class="card"><h3>${L('Producción y consumo por mes', 'Monthly production and consumption')}</h3><div class="chart"><canvas id="hMonC" class="h300"></canvas></div></div>
-        <div class="card"><h3>${L('Normativa e instalación', 'Regulations and installation')}</h3><div id="hLaw"></div><button class="btn pri" id="hLawGo" style="margin-top:14px">${L('Ver normativa, montaje y diagrama unifilar →', 'See regulations, installation and single-line diagram →')}</button></div>
+        <div class="card"><h3>${L('Instalación y normativa', 'Installation and regulations')}</h3><div id="hLaw"></div><div class="btns" style="margin-top:14px"><button class="btn pri" id="hMountGo">${L('Ver montaje 3D y diagrama unifilar →', 'See 3D installation and single-line diagram →')}</button><button class="btn" id="hLawGo">${L('Normativa y equipos →', 'Regulations and equipment →')}</button></div></div>
       </div>
       <div class="card" style="margin-top:24px"><div class="chead"><div><h3>${L('¿Quieres ver el detalle técnico?', 'Want the technical detail?')}</h3><p class="sub">${L('Lleva este diseño al simulador completo: curvas, sombras, MPPT, baterías, red eléctrica y simulación anual.', 'Take this design to the full simulator: curves, shading, MPPT, batteries, power grid and annual simulation.')}</p></div><div class="btns"><button class="btn" id="hGrid">${L('Red, armónicos y motores →', 'Grid, harmonics and motors →')}</button><button class="btn pri" id="hGo">${L('Abrir simulación detallada →', 'Open detailed simulation →')}</button></div></div>
         <p class="note">${L(`Tarifas de la ENEE publicadas por la CREE (vigentes desde ${TARIFF.period.es}). Producción calculada hora por hora con datos PVGIS, pérdidas del 7 % en CC y la eficiencia del inversor elegido. Valores orientativos: un diseño definitivo requiere visita técnica.`, `ENEE tariffs published by CREE (in force since ${TARIFF.period.en}). Production computed hour by hour with PVGIS data, 7 % DC losses and the selected inverter efficiency. Indicative values: a final design requires a site visit.`)}</p></div>`;
@@ -234,10 +234,11 @@
     $('hFx').onchange = e => { HOME.fx = +e.target.value; update(); };
     $('hHour').oninput = e => { stop(); HOME.hour = +e.target.value; sunUpdate(); };
     $('hMonth').onchange = e => { HOME.month = +e.target.value; sunUpdate(); };
-    $('hPlay').onclick = () => { if (anim) return stop(); if (HOME.hour >= 18.9) HOME.hour = 5.5; $('hPlay').textContent = '❚❚'; anim = requestAnimationFrame(play); };
+    $('hPlay').onclick = () => { if (anim) return stop(); if (HOME.hour >= 23.9) HOME.hour = 0; $('hPlay').textContent = '❚❚'; anim = requestAnimationFrame(play); };
     $('hGo').onclick = applyDetailed;
     $('hGrid').onclick = () => A().go('grid');
     $('hLawGo').onclick = () => A().go('install');
+    $('hMountGo').onclick = () => A().go('mount');
   }
   // Ubicación propia: se usa solo en el navegador; el clima viene de la ciudad con datos más cercana
   function setLoc(lat, lon) {
@@ -247,7 +248,7 @@
     A().loadTmy().then(() => { EXT.home(); A().renderSummary(); });
   }
   EXT.setLoc = setLoc;
-  function play(ts) { if (!lastT) lastT = ts; HOME.hour += (ts - lastT) / 1000 * 1.2; lastT = ts; if (HOME.hour >= 19) { HOME.hour = 19; stop(); } const h = $('hHour'); if (h) h.value = HOME.hour; sunUpdate(); if (anim) anim = requestAnimationFrame(play); }
+  function play(ts) { if (!lastT) lastT = ts; HOME.hour += (ts - lastT) / 1000 * 1.6; lastT = ts; if (HOME.hour >= 24) { HOME.hour = 24; stop(); } const h = $('hHour'); if (h) h.value = HOME.hour; sunUpdate(); if (anim) anim = requestAnimationFrame(play); }
   function stop() { cancelAnimationFrame(anim); anim = 0; lastT = 0; const b = $('hPlay'); if (b) b.textContent = '▶'; }
 
   function update(rebuild) {
@@ -320,13 +321,15 @@
     // potencia típica del mes a esa hora (promedio de los días del mes con PVGIS)
     const t = A().useTmy(), Sx = { ...S, site, loss: { soil: 0, mism: 0, iam: true, degr: 0, year: 1 }, modInfo: { noct: calc.m.noct } };
     const md = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31], d0 = md.slice(0, HOME.month).reduce((a, b) => a + b, 0) + 1;
-    let pk = 0, G = 0; for (let d = d0; d < d0 + md[HOME.month]; d++) { const w = window.SIM.weatherAt(Sx, t, d, HOME.hour); G += w.Geff; pk += w.Geff / 1000 * (1 + calc.m.gP / 100 * (w.Tc - 25)) * 0.93; }
+    let pk = 0, G = 0, gh = 0, cs = 0; for (let d = d0; d < d0 + md[HOME.month]; d++) { const w = window.SIM.weatherAt(Sx, t, d, HOME.hour); G += w.Geff; pk += w.Geff / 1000 * (1 + calc.m.gP / 100 * (w.Tc - 25)) * 0.93;
+      for (const hh of [9.5, 11.5, 13.5]) { const w2 = window.SIM.weatherAt(Sx, t, d, hh); gh += w2.irr.ghi; cs += window.SOLAR.clearSky(site, w2.sp).ghi; } }
     pk /= md[HOME.month]; G /= md[HOME.month];
+    const cloud = t ? Math.max(0, Math.min(1, (1 - gh / Math.max(cs, 1)) * 1.6)) : 0.25;
     const Pdc = pk * calc.kWp * 1000 / calc.nInv, Pac = sandia(calc.inv, Pdc) * calc.nInv / 1000;
-    if (scene) scene.setSun(sp.az, sp.el, path, Pac / Math.max(calc.kWac, 0.001));
+    if (scene) scene.setSun(sp.az, sp.el, path, Pac / Math.max(calc.kWac, 0.001), cloud);
     const hh = h => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60) % 60).padStart(2, '0')}`;
     const city = HOME.loc ? L('Mi ubicación', 'My location') : A().CITIES[S.site.city] ? A().CITIES[S.site.city].name : '';
-    const hud = $('hud'); if (hud) hud.innerHTML = `<b>${city}</b><span>${hh(HOME.hour)} · ${$('hMonth') ? $('hMonth').selectedOptions[0].text : ''}</span><span class="big">${fx(Pac, 2)} kW</span><span>${L('producción típica a esta hora', 'typical output at this hour')}</span><span>${sp.el > 0 ? L(`Sol a ${fx(sp.el, 0)}° de altura`, `Sun ${fx(sp.el, 0)}° high`) : L('Noche', 'Night')}</span>`;
+    const hud = $('hud'); if (hud) hud.innerHTML = `<b>${city}</b><span>${hh(HOME.hour)} · ${$('hMonth') ? $('hMonth').selectedOptions[0].text : ''}</span><span class="big">${fx(Pac, 2)} kW</span><span>${L('producción típica a esta hora', 'typical output at this hour')}</span><span>${sp.el > 0 ? L(`Sol a ${fx(sp.el, 0)}° de altura`, `Sun ${fx(sp.el, 0)}° high`) : L('Noche', 'Night')} · ${L('nubosidad típica', 'typical cloudiness')} ${fx(cloud * 100, 0)} %</span>`;
   }
 
   /* ---------- Llevar el diseño al simulador detallado ---------- */
