@@ -419,7 +419,7 @@
     (function loop() { if (!alive) return; requestAnimationFrame(loop); controls.update(); if (need) { renderer.render(scene, camera); need = false; } })();
     const mat = (c, r = 0.7, m = 0.1) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m });
     const PM = new THREE.MeshStandardMaterial({ map: cellTex(THREE), roughness: 0.3, metalness: 0.35 });
-    function b(w, h, d, m, x, y, z, parent = root) { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; parent.add(o); return o; }
+    function b(w, h, d, m, x, y, z, parent) { if (!parent || !parent.add) parent = root; const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; parent.add(o); return o; }
     function tube(pts, r, m) { const cv = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p)), false, 'catmullrom', 0.05); const o = new THREE.Mesh(new THREE.TubeGeometry(cv, 64, r, 8, false), m); o.castShadow = true; root.add(o); return o; }
     function tag(text, x, y, z, ax, ay, az, color) {
       const s = label(THREE, text, color); s.position.set(x, y, z); root.add(s);
@@ -428,25 +428,70 @@
     }
     function build(c, d, tx) {
       scene.remove(root); root = new THREE.Group(); scene.add(root);
-      const W = 14, D = 8, H = 4.2;
-      const ground = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), mat(0x8fb069, 1)); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; root.add(ground);
-      b(W, H, D, mat(0xf1ece2, 0.9), 0, H / 2, 0);
-      b(W + 0.3, 0.35, D + 0.3, mat(0xc9ced6, 0.8), 0, H + 0.17, 0);
-      // paneles en la azotea (representativos)
-      const pw = 1.0, ph = 1.7, tilt = 15 * rad, cols = 8, rows = 2, shown = Math.min(c.n, cols * rows);
-      for (let i = 0; i < shown; i++) {
-        const r = Math.floor(i / cols), k = i % cols, g = new THREE.Group();
-        g.position.set(-W / 2 + 1.4 + k * (pw + 0.05) + pw / 2, H + 0.75, D / 2 - 1.6 - r * 2.6); g.rotation.x = tilt;
-        b(pw, 0.04, ph, PM, 0, 0, 0, g); b(pw + 0.04, 0.03, ph + 0.04, mat(0xc9ced6, 0.35, 0.8), 0, -0.02, 0, g); root.add(g);
-        b(0.05, 0.5, 0.05, mat(0x9aa2ad, 0.5, 0.7), g.position.x, H + 0.5, g.position.z - 0.6);
+      const kind = tx.kind || 'res', pw = tx.pw || 1.13, ph = tx.ph || 1.72, tilt = (tx.tilt ?? 15) * rad;
+      const wall = mat(0xf1ece2, 0.9), roofM = mat(0xc97a8c, 0.8), grey = mat(0xc9ced6, 0.8), steel = mat(0x9aa2ad, 0.5, 0.7);
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(160, 160), mat(0x8fb069, 1)); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; root.add(ground);
+      const panel = (x, y, z, rx) => { const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.x = rx; b(pw, 0.04, ph, PM, 0, 0, 0, g); b(pw + 0.04, 0.03, ph + 0.04, mat(0xc9ced6, 0.35, 0.8), 0, -0.02, 0, g); root.add(g); };
+      // filas de paneles inclinados sobre una superficie plana (azotea, marquesina o suelo)
+      const rowsFlat = (x0, x1, zFront, zBack, y, maxN, legs) => {
+        const L = ph * Math.cos(tilt), pitch = Math.max(L + 0.6, L * 1.8), cols = Math.max(1, Math.floor((x1 - x0) / (pw + 0.03))), rows = Math.max(1, Math.floor((zFront - zBack) / pitch));
+        let k = 0;
+        for (let r = 0; r < rows && k < maxN; r++) for (let c2 = 0; c2 < cols && k < maxN; c2++, k++) {
+          const x = x0 + (c2 + 0.5) * (pw + 0.03), z = zFront - L / 2 - r * pitch, yy = y + 0.35 + Math.sin(tilt) * ph / 2;
+          panel(x, yy, z, tilt); if (legs) b(0.06, yy - y, 0.06, steel, x, y + (yy - y) / 2, z - L * 0.35);
+        }
+        return { x: (x0 + x1) / 2, y: y + 1, z: zFront - L / 2 };
+      };
+      let W, D, H, top, ptag;   // top: punto donde baja la tubería desde los paneles
+      const N = tx.n || 12;
+      if (kind === 'res') {
+        W = 12.5; D = 8; H = 3.0; const pitchR = 22 * rad, half = D / 2, slope = half / Math.cos(pitchR), rise = half * Math.tan(pitchR);
+        b(W, H, D, wall, 0, H / 2, 0);
+        for (const sgn of [1, -1]) { const r = b(W + 0.6, 0.16, slope + 0.3, roofM, 0, H + rise / 2 + 0.05, sgn * half / 2); r.rotation.x = sgn * pitchR; }
+        const sh = new THREE.Shape(); sh.moveTo(-half, 0); sh.lineTo(half, 0); sh.lineTo(0, rise); sh.lineTo(-half, 0);
+        for (const sx of [-1, 1]) { const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), wall); m.material.side = THREE.DoubleSide; m.rotation.y = Math.PI / 2; m.position.set(sx * W / 2 * 0.999, H, 0); root.add(m); }
+        const cols = Math.max(1, Math.floor((W - 1.4) / (pw + 0.03))), rows = Math.max(1, Math.floor((slope - 0.6) / (ph + 0.03))); let k = 0;
+        for (let r = 0; r < rows && k < N; r++) { const rc = Math.min(cols, N - r * cols); for (let c2 = 0; c2 < rc; c2++, k++) { const sd = 0.4 + (r + 0.5) * (ph + 0.03); panel((c2 - (rc - 1) / 2) * (pw + 0.03), H + sd * Math.sin(pitchR) + 0.17, half - sd * Math.cos(pitchR), pitchR); } }
+        top = [-W / 2 + 0.6, H - 0.1]; ptag = [0, H + rise + 1.6, 1.2];
+      } else if (kind === 'apt') {
+        W = 14; D = 10; H = 12.4; b(W, H, D, wall, 0, H / 2, 0); b(W + 0.3, 0.5, D + 0.3, grey, 0, H + 0.25, 0);
+        for (let f = 1; f < 4; f++) for (let x = -W / 2 + 1.6; x < W / 2 - 1; x += 2.4) b(1.3, 1.3, 0.08, mat(0x6f8aa6, 0.15, 0.6), x, f * 3.1 + 1.4, D / 2 + 0.05, false);
+        const pt = rowsFlat(-W / 2 + 1, W / 2 - 1, D / 2 - 0.8, -D / 2 + 1, H + 0.5, N, true);
+        top = [-W / 2 + 0.6, H + 0.4]; ptag = [pt.x, H + 3.2, pt.z];
+      } else if (kind === 'com') {
+        W = 20; D = 13; H = 6.5; b(W, H, D, mat(0xd9dde3, 0.85, 0.1), 0, H / 2, 0); b(W + 0.2, 0.5, D + 0.2, grey, 0, H + 0.25, 0);
+        for (let x = 4; x < W / 2 - 1; x += 4.5) b(3.2, 4, 0.1, mat(0x3a3f47, 0.6), x, 2, D / 2 + 0.06, false);
+        const pt = rowsFlat(-W / 2 + 1, W / 2 - 1, D / 2 - 0.8, -D / 2 + 1, H + 0.5, N, true);
+        top = [-W / 2 + 0.6, H + 0.4]; ptag = [pt.x, H + 3.2, pt.z];
+      } else if (kind === 'gas') {
+        W = 13; D = 7; H = 3.8; b(W, H, D, wall, 0, H / 2, 0); b(W + 0.3, 0.45, D + 0.3, grey, 0, H + 0.22, 0); b(W, 0.6, 0.1, mat(0xec4899, 0.5), 0, H - 0.5, D / 2 + 0.06, false);
+        // marquesina con paneles a la izquierda
+        const cx = -W / 2 - 9, CW = 12, CD = 8, CH = 5.4;
+        b(CW, 0.6, CD, mat(0xffffff, 0.6), cx, CH, D / 2 - CD / 2); for (const dx of [-CW / 3, CW / 3]) b(0.4, CH, 0.4, grey, cx + dx, CH / 2, D / 2 - CD / 2);
+        for (const dx of [-CW / 3, CW / 3]) { b(1, 0.2, 3.5, grey, cx + dx, 0.1, D / 2 - CD / 2); b(0.7, 1.7, 0.45, mat(0xffffff, 0.6), cx + dx, 1.05, D / 2 - CD / 2); }
+        const pt = rowsFlat(cx - CW / 2 + 0.4, cx + CW / 2 - 0.4, D / 2 - 0.4, D / 2 - CD + 0.4, CH + 0.3, N, false);
+        rowsFlat(-W / 2 + 0.8, W / 2 - 0.8, D / 2 - 0.6, -D / 2 + 0.8, H + 0.45, Math.max(0, N - 40), true);
+        tube([[cx + CW / 3, CH, D / 2 - 0.4], [cx + CW / 3, 0.05, D / 2 + 0.2], [-W / 2 + 0.6, 0.05, D / 2 + 0.2]], 0.05, mat(0x9aa2ad, 0.5, 0.6));
+        top = [-W / 2 + 0.6, 0.3]; ptag = [pt.x, CH + 2.6, pt.z];
+      } else {   // parque solar: filas en suelo detrás de un bastidor de equipos
+        W = 14; D = 2; H = 0;
+        b(16, 0.15, 6, mat(0xb8ae96, 1), 0, 0.07, 1.5, false, true);
+        b(11, 2.6, 0.12, steel, -0.9, 1.3, D / 2 - 0.06);                       // bastidor metálico
+        for (let r = 0; r < 4; r++) for (let c2 = 0; c2 < 18; c2++) for (let j = 0; j < 2; j++) {
+          const x = -14 + c2 * (pw + 0.03) * 1.0 + (c2 >= 9 ? 2 : 0), z = -5 - r * (ph * 2 * Math.cos(tilt) / 0.42) - j * ph * Math.cos(tilt);
+          panel(x, 1 + (j + 0.5) * ph * Math.sin(tilt), z, tilt);
+        }
+        for (let r = 0; r < 4; r++) b(18 * (pw + 0.03) + 2, 0.08, 0.08, steel, -14 + 9 * (pw + 0.03), 0.9, -5 - r * (ph * 2 * Math.cos(tilt) / 0.42) - ph * Math.cos(tilt) / 2);
+        top = [-6.5, 1.6]; ptag = [-4, 5.5, -7];
+        tube([[-6.5, 0.3, -4.5], [-6.5, 0.05, D / 2 + 0.2], [-5.6, 0.05, D / 2 + 0.2]], 0.06, mat(0xc0392b, 0.6));
       }
-      tag(tx.panels, -W / 2 + 4.6, H + 2.4, D / 2 - 1.6, -W / 2 + 4.6, H + 1.0, D / 2 - 1.6, '#c98a1b');
+      tag(tx.panels, ptag[0], ptag[1], ptag[2], ptag[0], ptag[1] - 1.6, ptag[2], '#ec4899');
       // equipos en la fachada (z = D/2)
       const zf = D / 2 + 0.12, y0 = 1.6, red = mat(0xc0392b, 0.6), blk = mat(0x222831, 0.6), cond = mat(0x9aa2ad, 0.5, 0.6), grn = mat(0x2e7d55, 0.6);
       let x = -4.8;
       if (!tx.micro) { b(0.55, 0.7, 0.2, mat(0xd9dde3, 0.5, 0.3), x, y0 + 0.2, zf); b(0.12, 0.12, 0.05, red, x + 0.12, y0 + 0.25, zf + 0.12); tag(tx.dc, x - 1.2, y0 - 0.9, zf + 1.6, x, y0 - 0.1, zf, '#c0392b'); }
       // tubería desde la azotea
-      tube([[-W / 2 + 1.2, H + 0.4, D / 2 - 1.2], [-W / 2 + 1.2, H + 0.4, zf], [-4.8 - (tx.micro ? 0 : 0), H + 0.1, zf], [-4.8, y0 + 0.6, zf]], 0.045, tx.micro ? cond : red);
+      if (kind !== 'farm') tube([[top[0], top[1], zf], [top[0], Math.max(top[1] - 0.6, y0 + 1), zf], [-4.8, Math.max(top[1] - 0.6, y0 + 1), zf], [-4.8, y0 + 0.6, zf]], 0.045, tx.micro ? cond : red);
       const xi = -2.6;
       b(0.75, 0.95, 0.24, mat(0xf4f5f7, 0.45, 0.2), xi, y0 + 0.25, zf); b(0.32, 0.12, 0.03, mat(0x1d3b6e, 0.3, 0.3), xi, y0 + 0.5, zf + 0.13);
       tag(tx.inv, xi - 0.6, y0 + 1.75, zf + 1.6, xi, y0 + 0.75, zf, '#7b5ea7');
@@ -461,7 +506,7 @@
       tag(tx.meter, xm + 1.3, y0 + 1.25, zf + 1.6, xm, y0 + 0.7, zf, '#2b5aa6');
       tube([[xp, y0 + 0.65, zf], [xp, y0 + 0.95, zf], [xm, y0 + 0.95, zf], [xm, y0 + 0.65, zf]], 0.04, cond);
       // poste y transformador
-      const px = 9.5, pz = D / 2 + 1.2; const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.18, 9, 12), mat(0x8a8f96)); pole.position.set(px, 4.5, pz); pole.castShadow = true; root.add(pole);
+      const px = W / 2 + 3.2, pz = D / 2 + 1.2; const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.18, 9, 12), mat(0x8a8f96)); pole.position.set(px, 4.5, pz); pole.castShadow = true; root.add(pole);
       b(2.2, 0.1, 0.1, mat(0x8a8f96), px, 8.4, pz); const xf = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.85, 16), mat(0x7c8590, 0.5, 0.5)); xf.position.set(px + 0.42, 7.3, pz); xf.castShadow = true; root.add(xf);
       tag(tx.grid, px + 1.8, 9.6, pz, px + 0.4, 7.6, pz, '#334155');
       tube([[px + 0.3, 7.6, pz], [(px + xm) / 2, 4.2, (pz + zf) / 2], [xm, y0 + 1.25, zf + 0.05]], 0.02, blk);
@@ -469,7 +514,8 @@
       const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.6, 8), mat(0xb87333, 0.3, 0.8)); rod.position.set(xp + 0.6, 0.15, zf + 0.6); root.add(rod);
       tube([[xp, y0 - 0.45, zf], [xp, 0.05, zf], [xp + 0.6, 0.05, zf + 0.6]], 0.02, grn);
       tag(tx.ground, xp + 2.4, 0.5, zf + 2.2, xp + 0.6, 0.3, zf + 0.6, '#2e7d55');
-      camera.position.set(2.5, 6.8, 21); controls.target.set(0.8, 2.6, 0); controls.update(); need = true;
+      const cam = { res: [3, 7, 21, 2.6], apt: [6, 11, 30, 5], com: [8, 10, 30, 3.5], gas: [-6, 9, 28, 2.6], farm: [2, 9, 22, 1.5] }[kind] || [3, 7, 21, 2.6];
+      camera.position.set(cam[0], cam[1], cam[2]); controls.target.set(kind === 'gas' ? -5 : 0.5, cam[3], kind === 'farm' ? -2 : 0); controls.maxDistance = 120; controls.update(); need = true;
     }
     return { build, dispose() { alive = false; ro.disconnect(); renderer.dispose(); container.innerHTML = ''; } };
   }

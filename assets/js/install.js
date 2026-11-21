@@ -162,7 +162,19 @@
   }
   function labels(c, d) {
     const short = s => s.replace(/Co\., Ltd\.|Inc\.|Green Energy Technology|Solar /g, '').trim();
-    return {
+    const H = EXT.homeState().HOME, m = c.m;
+    let pw, ph; if (m.W && m.H) { pw = m.W; ph = m.H; } else { const r = m.Ns === 36 ? 0.67 / 1.48 : m.Ns === 60 ? 0.99 / 1.65 : 0.99 / 1.96; ph = Math.sqrt(m.A / r); pw = m.A / ph; }
+    const geo = { kind: H.kind, pw, ph, tilt: H.tilt, n: c.n };
+    if (c.farm) return { ...geo,
+      panels: `${fx(c.n, 0)} × ${short(m.name)} · ${fx(c.kWp / 1000, 2)} MWp`,
+      dc: `${L('Cajas de strings', 'String combiner boxes')}: ${d.fuse ? 'gPV ' + d.fuse + ' A · ' : ''}DPS`,
+      inv: `${c.nInv} × ${c.inv.name.split(' (')[0]}`,
+      ac: `${L('Protección CA de baja tensión', 'Low-voltage AC protection')}`,
+      panel: L('Centro de transformación BT/MT', 'LV/MV transformer station'),
+      meter: L('Medición en media tensión', 'Medium-voltage metering'),
+      grid: L('Red ENEE (34,5 kV)', 'ENEE grid (34.5 kV)'),
+      ground: L('Malla de tierra', 'Grounding grid'), micro: false };
+    return { ...geo,
       panels: `${c.n} × ${short(c.m.name)} · ${fx(c.kWp, 1)} kWp`,
       dc: d.micro ? null : `${L('Caja CC', 'DC box')}: ${d.fuse ? 'gPV ' + d.fuse + ' A · ' : ''}DPS · ${L('seccionador', 'isolator')}`,
       inv: `${c.nInv} × ${c.inv.name.split(' (')[0]}`,
