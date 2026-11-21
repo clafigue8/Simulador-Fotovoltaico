@@ -59,41 +59,47 @@
     let n = Math.max(1, Math.ceil(Eyear * HOME.cover / (Ykwp * Pmod * 0.965)));
     const nLawE = Math.floor(Eyear / (Ykwp * Pmod * 0.965) * 0.999);  // producción < consumo anual (Art. 47 A.ii)
     let capped = false; if (n > nLawE && nLawE >= 1) { n = nLawE; capped = true; }
+    // la potencia instalada no puede superar la demanda máxima (Art. 47 A.i): CC hasta 1,25 × demanda
+    const nDem = Math.max(1, Math.floor(dmax * 1.25 / Pmod)); let cappedDem = false;
+    if (n > nDem) { n = nDem; cappedDem = true; }
     let kWp = n * Pmod;
     // 3) inversores (automático: relación CC/CA cercana a 1,15 respetando la demanda máxima, Art. 47 A.i)
-    const sizeFor = v => { const ni = v.type === 'micro' ? n : Math.max(1, Math.round(kWp * 1000 / (v.Paco * 1.15))); return { ni, kWac: ni * v.Paco / 1000, dcac: kWp * 1000 / (ni * v.Paco) }; };
+    const sizeFor = v => {
+      let ni = v.type === 'micro' ? Math.min(n, Math.max(1, Math.floor(dmax * 1000 / v.Paco))) : Math.max(1, Math.round(kWp * 1000 / (v.Paco * 1.15)));
+      if (v.type !== 'micro' && ni > 1 && ni * v.Paco / 1000 > dmax) ni = Math.max(1, Math.floor(dmax * 1000 / v.Paco));
+      return { ni, kWac: ni * v.Paco / 1000, dcac: kWp * 1000 / (ni * v.Paco) };
+    };
+    const cap = nLawE >= 1 ? nLawE : 1e9;
+    // Plan de strings: cuántos paneles en serie (s) y cuántas series (ns) por inversor
+    const plan = (v, ni) => {
+      if (v.type === 'micro' || /SolarEdge|OutBack/.test(v.name)) return { ok: true, none: true };
+      const VocC = m.Voc + m.bV * (Tmin - 2 - 25), VmpH = m.Vmp + m.bV * (70 - 25);
+      const sMax = Math.floor(v.Vdcmax / VocC), sMin = Math.ceil(v.Vmin / VmpH), hi = Math.min(sMax, Math.max(Math.floor(v.Vmax / m.Vmp), sMin));
+      if (sMin > hi) return { ok: false, why: 'range', sMin, sMax };
+      const per = n / ni; let best = null;
+      for (let st = sMin; st <= hi; st++) for (let ns = 1; ns <= Math.max(1, Math.ceil(per / st) + 1); ns++) {
+        const tot = st * ns * ni, sc = Math.abs(tot - n) + (tot > cap ? 1000 : 0) + ns * 0.01;
+        if (!best || sc < best.sc) best = { s: st, ns, sc, tot };
+      }
+      if (best.tot > cap || Math.abs(best.tot - n) > Math.max(2, 0.25 * n)) return { ok: false, why: n / ni < sMin ? 'few' : 'many', sMin, sMax };
+      return { ok: true, s: best.s, ns: best.ns, tot: best.tot, VocC: VocC * best.s, VmpH: VmpH * best.s, sMin, sMax };
+    };
     let autoInv = null;
     if (HOME.invIdx === 'auto') {
       let best = null;
-      invs().filter(x => x.v.type !== 'hybrid').forEach(x => { const z = sizeFor(x.v), sc = Math.abs(z.dcac - 1.15) + (z.kWac > dmax ? 10 + z.kWac - dmax : 0) + (z.ni > 1 && x.v.type !== 'micro' ? (z.ni - 1) * 0.08 : 0) + (x.v.type === 'micro' ? 0.12 : 0); if (!best || sc < best.sc) best = { sc, i: x.i }; });
+      invs().filter(x => x.v.type !== 'hybrid').forEach(x => { const z = sizeFor(x.v), pl = plan(x.v, z.ni), sc = (pl.ok ? 0 : 100) + Math.abs(z.dcac - 1.15) + (z.kWac > dmax ? 10 + z.kWac - dmax : 0) + (z.ni > 1 && x.v.type !== 'micro' ? (z.ni - 1) * 0.08 : 0) + (x.v.type === 'micro' ? 0.12 + (n - z.ni) / n * 3 : 0); if (!best || sc < best.sc) best = { sc, i: x.i }; });
       autoInv = best.i;
     }
     const inv = window.INVERTERS_GRID[HOME.invIdx === 'auto' ? autoInv : HOME.invIdx];
     let nInv, perInv, strings = null, strErr = '';
-    if (inv.type === 'micro') { nInv = n; perInv = 1; }
-    else {
-      nInv = Math.max(1, Math.round(kWp * 1000 / (inv.Paco * 1.15)));
-      perInv = Math.ceil(n / nInv);
-    }
+    if (inv.type === 'micro') { nInv = sizeFor(inv).ni; if (nInv < n) { n = nInv; kWp = n * Pmod; cappedDem = true; } perInv = 1; }
+    else { nInv = sizeFor(inv).ni; perInv = Math.ceil(n / nInv); }
     const dcac = kWp * 1000 / (nInv * inv.Paco);
     // diseño de strings (inversores de string sin optimizadores)
     const opt = /SolarEdge/.test(inv.name), batt = /OutBack/.test(inv.name);
-    if (inv.type !== 'micro' && !opt && !batt) {
-      const TcCold = Tmin - 2, TcHot = 70;
-      const VocC = m.Voc + m.bV * (TcCold - 25), VmpH = m.Vmp + m.bV * (TcHot - 25), VmpS = m.Vmp;
-      const sMax = Math.floor(inv.Vdcmax / VocC), sMin = Math.ceil(inv.Vmin / VmpH), sMaxMp = Math.floor(inv.Vmax / VmpS);
-      const hi = Math.min(sMax, Math.max(sMaxMp, sMin));
-      if (sMin > hi) strErr = L(`El voltaje de un string no encaja en el rango del inversor (mínimo ${sMin} y máximo ${sMax} paneles).`, `String voltage does not fit the inverter range (minimum ${sMin} and maximum ${sMax} panels).`);
-      else {
-        let best = null; const cap = nLawE >= 1 ? nLawE : 1e9;
-        for (let s = sMin; s <= hi; s++) for (let ns = 1; ns <= Math.max(1, Math.ceil(perInv / s) + 1); ns++) {
-          const tot = s * ns * nInv; const sc = Math.abs(tot - n) + (tot > cap ? 1000 : 0) + ns * 0.01;
-          if (!best || sc < best.sc) best = { s, ns, sc };
-        }
-        strings = { s: best.s, ns: best.ns, VocC: VocC * best.s, VmpH: VmpH * best.s, sMin, sMax };
-        perInv = best.s * best.ns; n = perInv * nInv; kWp = n * Pmod;
-      }
-    }
+    const pl = plan(inv, nInv);
+    if (!pl.ok) strErr = pl;
+    else if (!pl.none) { strings = { s: pl.s, ns: pl.ns, VocC: pl.VocC, VmpH: pl.VmpH, sMin: pl.sMin, sMax: pl.sMax }; perInv = pl.s * pl.ns; n = perInv * nInv; kWp = n * Pmod; }
     const kWpF = n * Pmod, kWac = nInv * inv.Paco / 1000;
     // 4) producción horaria en CA, autoconsumo y excedentes
     const mon = Array.from({ length: 12 }, () => ({ pv: 0, load: 0, self: 0, exp: 0, imp: 0 }));
@@ -120,13 +126,13 @@
     const costHNL = kWpF * 1000 * HOME.cost[isRes() ? 'res' : 'com'] * HOME.fx;
     // área
     const area = n * m.A;
-    calc = { m, inv, auto: HOME.invIdx === 'auto', n, kWp: kWpF, kWac, nInv, perInv, strings, strErr, opt, batt, dcac, Ykwp, mon, tot, b0, b1, credit, save, costHNL, payback: costHNL / Math.max(save, 1), area, capped, Eyear, dmax, peakExp, peakPV, exRate, level, Tmin };
+    calc = { m, inv, cappedDem, autoIdx: autoInv, auto: HOME.invIdx === 'auto', n, kWp: kWpF, kWac, nInv, perInv, strings, strErr, opt, batt, dcac, Ykwp, mon, tot, b0, b1, credit, save, costHNL, payback: costHNL / Math.max(save, 1), area, capped, Eyear, dmax, peakExp, peakPV, exRate, level, Tmin };
     return calc;
   }
   function estDmax() {
     const prof = window.SYS.LOADPROF[isRes() ? 'res' : 'com'], psum = prof.reduce((a, b) => a + b, 0);
-    // factor de carga típico: residencial ≈ 0,18; comercial ≈ 0,35
-    return HOME.kwh / 730 / (isRes() ? 0.18 : 0.35);
+    // factor de carga típico: residencial ≈ 0,18; comercial ≈ 0,35; con un mínimo realista por picos de aparatos
+    return isRes() ? Math.max(HOME.kind === 'apt' ? 10 : 2.5, HOME.kwh / 730 / 0.18) : Math.max(5, HOME.kwh / 730 / 0.35);
   }
 
   /* ---------- Normativa ---------- */
@@ -168,7 +174,8 @@
             <div class="rowin"><input type="range" id="hKwh" min="${HOME.kind === 'res' ? 50 : 500}" max="${HOME.kind === 'res' ? 2500 : HOME.kind === 'apt' ? 40000 : 200000}" step="${HOME.kind === 'res' ? 10 : 100}" value="${HOME.kwh}"><input class="inp" type="number" id="hKwhN" value="${HOME.kwh}" min="10" max="1000000"><span>kWh/${L('mes', 'mo')}</span></div>
             <div class="rowin"><label style="flex:1;font-size:14px">${L('Demanda máxima', 'Maximum demand')} <small style="display:inline">(${L('0 = estimar', '0 = estimate')})</small></label><input class="inp" type="number" id="hDmax" value="${HOME.dmax}" min="0" max="100000" step="0.5" style="width:110px"><span>kW</span></div>
             ${HOME.kind === 'com' ? `<div style="margin-top:8px">${seg('volt', [['bt', L('Baja tensión', 'Low voltage')], ['mt', L('Media tensión', 'Medium voltage')]], HOME.volt)}</div>` : ''}</div></div>
-          <div class="q"><span class="qn">3</span><div><b>${L('¿Dónde está?', 'Where is it?')}</b><select class="sel" id="hCity">${cityOpts.map(([k, v]) => `<option value="${k}" ${!HOME.loc && S.site.city === k ? 'selected' : ''}>${v.name}</option>`).join('')}<option value="geo" ${HOME.loc ? 'selected' : ''}>📍 ${L('Mi ubicación actual', 'My current location')}</option></select>
+          <div class="q"><span class="qn">3</span><div><b>${L('¿Dónde está?', 'Where is it?')}</b>${HOME.loc ? '' : `<select class="sel" id="hCity">${cityOpts.map(([k, v]) => `<option value="${k}" ${S.site.city === k ? 'selected' : ''}>${v.name}</option>`).join('')}</select>`}
+            <div class="btns" style="margin-top:8px">${HOME.loc ? `<span class="badge ok">📍 ${L('Usando tu ubicación', 'Using your location')}</span><button class="btn sm" id="hLocOff">${L('Volver a elegir ciudad', 'Choose a city instead')}</button>` : `<button class="btn sm" id="hLocOn">📍 ${L('Usar mi ubicación (opcional)', 'Use my location (optional)')}</button>`}</div>
             ${HOME.loc ? `<small style="margin-top:6px">${L(`Coordenadas ${HOME.loc.lat.toFixed(4)}, ${HOME.loc.lon.toFixed(4)} · clima de ${A().CITIES[S.site.city].name} (la ciudad con datos más cercana). Solo se usan en tu navegador.`, `Coordinates ${HOME.loc.lat.toFixed(4)}, ${HOME.loc.lon.toFixed(4)} · weather from ${A().CITIES[S.site.city].name} (nearest city with data). Used only in your browser.`)}</small>` : ''}</div></div>
           <div class="q"><span class="qn">4</span><div><b>${L('¿Qué panel solar?', 'Which solar panel?')}</b><small>${L('Elige por número de celdas.', 'Choose by number of cells.')}</small>${seg('cells', [[36, '36 ' + L('celdas', 'cells')], [60, '60 ' + L('celdas', 'cells')], [72, '72 ' + L('celdas', 'cells')]], HOME.cells)}
             <select class="sel" id="hMod" style="margin-top:8px">${ms.map(x => `<option value="${x.i}" ${x.i === HOME.modId ? 'selected' : ''}>${esc(x.m.name.replace(/Co\., Ltd\.|Inc\.|Green Energy Technology/g, ''))} · ${x.m.Pstc.toFixed(0)} W</option>`).join('')}</select></div></div>
@@ -209,15 +216,13 @@
     kw.oninput = () => { kn.value = kw.value; }; kw.onchange = () => { HOME.kwh = +kw.value; update(true); };
     kn.onchange = () => { HOME.kwh = Math.max(10, +kn.value || 10); kw.value = HOME.kwh; update(true); };
     if ($('hDmax')) $('hDmax').onchange = e => { HOME.dmax = Math.max(0, +e.target.value || 0); update(); };
-    $('hCity').onchange = e => {
-      const S = A().S, v = e.target.value;
-      if (v === 'geo') {
-        if (!navigator.geolocation) { alert(L('Tu navegador no permite obtener la ubicación.', 'Your browser cannot get the location.')); return; }
-        navigator.geolocation.getCurrentPosition(p => setLoc(p.coords.latitude, p.coords.longitude), () => { alert(L('No se pudo obtener la ubicación. Revisa el permiso del navegador.', 'Could not get the location. Check the browser permission.')); EXT.home(); }, { enableHighAccuracy: true, timeout: 15000 });
-        return;
-      }
-      HOME.loc = null; const c = A().CITIES[v]; S.site.city = v; S.site.src = 'tmy'; Object.assign(S.site, { lat: c.lat, lon: c.lon, alt: c.alt, Tmin: c.Tmin, Tmax: c.Tmax, tz: -6 });
-      A().loadTmy().then(() => { EXT.home(); A().renderSummary(); });
+    const pickCity = v => { const S = A().S; HOME.loc = null; const c = A().CITIES[v]; S.site.city = v; S.site.src = 'tmy'; Object.assign(S.site, { lat: c.lat, lon: c.lon, alt: c.alt, Tmin: c.Tmin, Tmax: c.Tmax, tz: -6 }); A().loadTmy().then(() => { EXT.home(); A().renderSummary(); }); };
+    if ($('hCity')) $('hCity').onchange = e => pickCity(e.target.value);
+    if ($('hLocOff')) $('hLocOff').onclick = () => pickCity(A().S.site.city);
+    if ($('hLocOn')) $('hLocOn').onclick = () => {
+      if (!navigator.geolocation) { alert(L('Tu navegador no permite obtener la ubicación.', 'Your browser cannot get the location.')); return; }
+      $('hLocOn').textContent = L('Buscando ubicación…', 'Finding location…');
+      navigator.geolocation.getCurrentPosition(p => setLoc(p.coords.latitude, p.coords.longitude), () => { alert(L('No se pudo obtener la ubicación. Revisa que el navegador tenga permiso de ubicación.', 'Could not get the location. Check that the browser has location permission.')); EXT.home(); }, { enableHighAccuracy: true, timeout: 15000 });
     };
     $('hMod').onchange = e => { HOME.modId = +e.target.value; update(true); };
     $('hInv').onchange = e => { HOME.invIdx = e.target.value === 'auto' ? 'auto' : +e.target.value; update(true); };
@@ -254,17 +259,43 @@
     $('hSys').innerHTML = `<div class="kv"><span>${L('Panel', 'Panel')}</span><span>${c.m.Pstc.toFixed(0)} W · ${c.m.Ns} ${L('celdas', 'cells')}</span><span>${L('Inversor', 'Inverter')}${c.auto ? ' <small style="color:var(--muted)">(' + L('automático', 'automatic') + ')</small>' : ''}</span><span>${c.nInv} × ${A().esc(inv.name.split(' (')[0])}</span><span>${L('Potencia CA', 'AC power')}</span><span>${fx(c.kWac, 2)} kW</span><span>${L('Relación CC/CA', 'DC/AC ratio')}</span><span>${fx(c.dcac, 2)}</span>
       ${c.strings ? `<span>${L('Configuración', 'Configuration')}</span><span>${c.strings.ns} string(s) × ${c.strings.s} ${L('paneles', 'panels')}${c.nInv > 1 ? ' ' + L('por inversor', 'per inverter') : ''}</span><span>V<sub>oc</sub> ${L('en frío', 'cold')} (${fx(c.Tmin - 2, 0)} °C)</span><span>${fx(c.strings.VocC, 0)} / ${fx(inv.Vdcmax, 0)} V</span>` : ''}
       <span>${L('Producción específica', 'Specific yield')}</span><span>${fx(c.tot.pv / c.kWp, 0)} kWh/kWp</span><span>${L('Factura actual', 'Current bill')}</span><span>L ${fx(c.b0 / 12, 0)}/${L('mes', 'mo')}</span><span>${L('Factura con paneles', 'Bill with panels')}</span><span>L ${fx(Math.max(0, c.b1 - c.credit) / 12, 0)}/${L('mes', 'mo')}</span><span>${L('Excedentes vendidos', 'Surplus sold')}</span><span>${fx(c.tot.exp, 0)} kWh/${L('año', 'yr')}</span></div>
-      ${c.strErr ? `<div class="alert bad">${c.strErr}</div>` : ''}
-      ${c.dcac > 1.35 ? `<div class="alert warn">${L('Relación CC/CA alta: el inversor recortará potencia en las horas de más sol.', 'High DC/AC ratio: the inverter will clip power at peak sun hours.')}</div>` : c.dcac < 0.8 ? `<div class="alert warn">${L('El inversor está sobredimensionado para este número de paneles.', 'The inverter is oversized for this number of panels.')}</div>` : ''}
+      ${advice(c)}
       ${c.opt ? `<p class="note">${L('SolarEdge usa optimizadores por panel; la tensión del string la fija el inversor.', 'SolarEdge uses per-panel optimizers; the inverter sets the string voltage.')}</p>` : ''}
-      ${c.batt ? `<div class="alert warn">${L('Este equipo es un inversor-cargador de baterías: necesita un controlador de carga MPPT aparte para los paneles.', 'This is a battery inverter-charger: it needs a separate MPPT charge controller for the panels.')}</div>` : ''}
       ${c.capped ? `<div class="alert warn">${L('Se limitó el número de paneles para que la producción anual sea menor que tu consumo, como exige el Art. 47 del reglamento.', 'The number of panels was limited so annual production stays below your consumption, as required by Art. 47 of the regulation.')}</div>` : ''}`;
     const lw = lawChecks(c).filter(x => !x.info), okN = lw.filter(x => x.ok).length;
+    $('hSys').querySelectorAll('[data-fix]').forEach(b => b.onclick = () => fix(b.dataset.fix));
     $('hLaw').innerHTML = `<div class="kpis">${kpi(L('Requisitos legales', 'Legal requirements'), okN + ' / ' + lw.length, L('cumplidos', 'met'), okN === lw.length ? 'ok' : 'bad')}</div><p class="note">${L('Revisión del Reglamento de la Ley General de la Industria Eléctrica (Art. 47–50), protecciones, conductores, montaje en 3D y diagrama unifilar con las marcas sugeridas.', 'Review of the General Electricity Industry Law Regulation (Art. 47–50), protections, conductors, 3D installation and single-line diagram with suggested brands.')}</p>`;
     const months = L('Ene Feb Mar Abr May Jun Jul Ago Sep Oct Nov Dic', 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec').split(' '), xs = months.map((_, i) => i + 1), css = A().css;
     window.CHART.draw($('hMonC'), { xs, xmin: 0.5, xmax: 12.5, xticks: xs.map((x, i) => ({ x, label: months[i] })), series: [{ type: 'bar', ys: c.mon.map(x => x.load), color: css('--s6'), bw: 0.36, off: -0.19, label: L('Consumo', 'Consumption') }, { type: 'bar', ys: c.mon.map(x => x.pv), color: css('--s4'), bw: 0.36, off: 0.19, label: L('Producción solar', 'Solar production') }], xl: '', yl: 'kWh', ymaxL: Math.max(...c.mon.map(x => Math.max(x.load, x.pv))) * 1.1 });
     if (rebuild && scene) build3d();
     sunUpdate();
+  }
+
+  /* ---------- Recomendaciones en lenguaje sencillo ---------- */
+  function advice(c) {
+    const items = [], recName = c.autoIdx != null ? window.INVERTERS_GRID[c.autoIdx].name.split(' (')[0] : null;
+    const btnAuto = !c.auto ? `<button class="btn sm pri" data-fix="auto">${L('Usar el inversor recomendado', 'Use the recommended inverter')}</button>` : '';
+    const btnMicro = c.inv.type !== 'micro' ? `<button class="btn sm" data-fix="micro">${L('Probar con microinversores', 'Try microinverters')}</button>` : '';
+    const e = c.strErr;
+    if (e && e.why === 'few') items.push(['bad', L('Este inversor es demasiado grande para tu sistema', 'This inverter is too large for your system'), L(`Necesita al menos ${e.sMin} paneles conectados en fila (en serie) para poder encender, y tu diseño tiene ${c.n}. Elige un inversor más pequeño o microinversores, que funcionan con cualquier número de paneles.`, `It needs at least ${e.sMin} panels connected in a row (in series) to switch on, and your design has ${c.n}. Choose a smaller inverter or microinverters, which work with any number of panels.`), btnAuto + btnMicro]);
+    else if (e && e.why === 'range') items.push(['bad', L('El panel y el inversor no son compatibles', 'The panel and the inverter are not compatible'), L(`Con este panel, el voltaje de los paneles en fila queda fuera del rango en que trabaja el inversor (de ${fx(c.inv.Vmin, 0)} a ${fx(c.inv.Vdcmax, 0)} V). Cambia de inversor o prueba otro tipo de panel.`, `With this panel, the voltage of the panels in a row falls outside the inverter operating range (${fx(c.inv.Vmin, 0)} to ${fx(c.inv.Vdcmax, 0)} V). Change the inverter or try another panel type.`), btnAuto + `<button class="btn sm" data-fix="cells">${L(`Cambiar a paneles de ${HOME.cells === 72 ? 60 : 72} celdas`, `Switch to ${HOME.cells === 72 ? 60 : 72}-cell panels`)}</button>`]);
+    else if (e && e.why === 'many') items.push(['bad', L('No se logra una conexión equilibrada de los paneles', 'The panels cannot be connected evenly'), L('Con este inversor no se pueden repartir los paneles en filas iguales sin pasarte del límite legal de producción. El inversor recomendado lo resuelve.', 'With this inverter the panels cannot be split into equal rows without exceeding the legal production limit. The recommended inverter solves it.'), btnAuto + btnMicro]);
+    if (c.batt) items.push(['warn', L('Este equipo es para sistemas con baterías', 'This device is for battery systems'), L('Es un inversor-cargador: no se conecta directamente a los paneles, necesita además un controlador de carga solar. Para un sistema conectado a la red, usa un inversor de red.', 'It is an inverter-charger: it does not connect directly to the panels and also needs a solar charge controller. For a grid-tied system, use a grid inverter.'), btnAuto]);
+    if (!e && c.dcac > 1.35) items.push(['warn', L('Tienes más paneles de los que el inversor puede aprovechar', 'You have more panels than the inverter can use'), L('En las horas de más sol el inversor limitará la potencia y se perderá algo de energía. Un inversor un poco más grande lo evita.', 'At peak sun hours the inverter will limit power and some energy will be lost. A slightly larger inverter avoids it.'), btnAuto]);
+    if (!e && c.dcac < 0.8 && c.inv.type === 'micro' && c.m.Pstc < 250) items.push(['warn', L('Tus paneles son pequeños para un microinversor', 'Your panels are small for a microinverter'), L(`Cada microinversor puede manejar unos ${fx(c.inv.Paco, 0)} W, pero cada panel solo da ${fx(c.m.Pstc, 0)} W. Con paneles de 60 o 72 celdas aprovecharás mejor cada equipo y cubrirás más consumo.`, `Each microinverter can handle about ${fx(c.inv.Paco, 0)} W, but each panel only gives ${fx(c.m.Pstc, 0)} W. With 60- or 72-cell panels you will make better use of each device and cover more consumption.`), `<button class="btn sm pri" data-fix="cells60">${L('Cambiar a paneles de 60 celdas', 'Switch to 60-cell panels')}</button>`]);
+    else if (!e && c.dcac < 0.8) items.push(['warn', L('El inversor es más grande de lo necesario', 'The inverter is larger than needed'), L('Funcionará, pero pagarás de más y trabajará con menor eficiencia. Te conviene uno más pequeño.', 'It will work, but you will overpay and it will run at lower efficiency. A smaller one suits you better.'), btnAuto]);
+    if (c.kWac > c.dmax + 1e-9) items.push(['bad', L('El inversor supera tu demanda máxima', 'The inverter exceeds your maximum demand'), L(`La ley (Art. 47) no permite instalar más potencia que tu demanda máxima (${fx(c.dmax, 1)} kW). Si conoces tu demanda real (aparece en recibos comerciales), escríbela en la pregunta 2; si no, usa el inversor recomendado.`, `The law (Art. 47) does not allow installing more power than your maximum demand (${fx(c.dmax, 1)} kW). If you know your real demand (shown on commercial bills), enter it in question 2; otherwise use the recommended inverter.`), btnAuto + btnMicro]);
+    if (c.cappedDem) items.push(['info', L('Ajustamos el sistema a tu demanda máxima', 'We sized the system to your maximum demand'), L(`La ley no permite instalar más potencia que tu demanda máxima (${fx(c.dmax, 1)} kW${HOME.dmax > 0 ? '' : ', estimada'}). Por eso el sistema cubre ${fx(c.tot.pv / c.Eyear * 100, 0)} % de tu consumo. Si tu demanda real es mayor, escríbela en la pregunta 2.`, `The law does not allow installing more power than your maximum demand (${fx(c.dmax, 1)} kW${HOME.dmax > 0 ? '' : ', estimated'}). That is why the system covers ${fx(c.tot.pv / c.Eyear * 100, 0)} % of your consumption. If your real demand is higher, enter it in question 2.`), '']);
+    if (c.capped) items.push(['info', L('Ajustamos el número de paneles', 'We adjusted the number of panels'), L('La ley pide que el sistema produzca menos energía al año de la que consumes, así que limitamos la cantidad de paneles.', 'The law requires the system to produce less energy per year than you consume, so we limited the number of panels.'), '']);
+    if (!items.length) return `<div class="alert ok" style="margin-top:14px"><b>${L('Todo en orden.', 'All good.')}</b> ${L(`El panel y el inversor${recName && c.auto ? '' : ''} son compatibles y el sistema cumple la normativa.`, 'The panel and inverter are compatible and the system meets the regulations.')}</div>`;
+    return items.map(([cls, t, d, b]) => `<div class="alert ${cls === 'info' ? 'ok' : cls}" style="margin-top:14px"><b style="display:block;margin-bottom:4px">${t}</b>${d}${b ? `<div class="btns" style="margin-top:10px">${b}</div>` : ''}</div>`).join('');
+  }
+  function fix(k) {
+    if (k === 'auto') HOME.invIdx = 'auto';
+    if (k === 'micro') HOME.invIdx = window.INVERTERS_GRID.findIndex(v => v.type === 'micro');
+    if (k === 'cells') { HOME.cells = HOME.cells === 72 ? 60 : 72; HOME.modId = modsByCells(HOME.cells)[0].i; }
+    if (k === 'cells60') { HOME.cells = 60; HOME.modId = modsByCells(60)[0].i; HOME.invIdx = 'auto'; }
+    EXT.home();
   }
 
   /* ---------- 3D ---------- */
