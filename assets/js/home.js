@@ -16,7 +16,7 @@
   const FX_DEFAULT = 27.07;                          // BCH, venta, 12/11/2026
 
   const HOME = {
-    kind: 'res', kwh: 350, dmax: 0, cover: 0.9, cells: 60, modId: 3, invIdx: 'auto', tilt: 20, az: 180,
+    kind: 'res', kwh: 350, bills: [350, 350, 350], dmax: 0, cover: 0.9, cells: 60, modId: 3, invIdx: 'auto', tilt: 20, az: 180,
     volt: 'bt', cost: { res: 1.10, com: 0.85 }, fx: FX_DEFAULT, hour: 10.5, month: 3
   };
   let scene = null, calc = null, anim = 0, lastT = 0;
@@ -170,8 +170,10 @@
           <h3>${L('Diseña tu sistema solar', 'Design your solar system')}</h3>
           <p class="sub">${L('Responde cinco preguntas y te recomendamos cuántos paneles necesitas.', 'Answer five questions and we will recommend how many panels you need.')}</p>
           <div class="q"><span class="qn">1</span><div><b>${L('¿Dónde se instalará?', 'Where will it be installed?')}</b>${seg('kind', [['res', '🏠 ' + L('Casa', 'House')], ['apt', '🏢 ' + L('Edificio', 'Building')], ['com', '🏭 ' + L('Industria', 'Industry')]], HOME.kind)}</div></div>
-          <div class="q"><span class="qn">2</span><div><b>${L('¿Cuánta energía consumes al mes?', 'How much energy do you use per month?')}</b><small>${L('Aparece en tu recibo de la ENEE como «consumo kWh».', 'It appears on your ENEE bill as “kWh consumption”.')}</small>
-            <div class="rowin"><input type="range" id="hKwh" min="${HOME.kind === 'res' ? 50 : 500}" max="${HOME.kind === 'res' ? 2500 : HOME.kind === 'apt' ? 40000 : 200000}" step="${HOME.kind === 'res' ? 10 : 100}" value="${HOME.kwh}"><input class="inp" type="number" id="hKwhN" value="${HOME.kwh}" min="10" max="1000000"><span>kWh/${L('mes', 'mo')}</span></div>
+          <div class="q"><span class="qn">2</span><div><b>${L('¿Cuánta energía consumes al mes?', 'How much energy do you use per month?')}</b><small>${L('Escribe el consumo en kWh de tus últimos 3 recibos de la ENEE. Usar varios meses da un resultado más confiable, porque el consumo cambia según la época del año.', 'Enter the kWh consumption from your last 3 ENEE bills. Using several months gives a more reliable result, because consumption changes with the season.')}</small>
+            <div class="bills">${[0, 1, 2].map(i => `<label><span>${L(['Último recibo', 'Penúltimo', 'Antepenúltimo'][i], ['Latest bill', 'Previous', 'Two bills ago'][i])}</span><input class="inp" type="number" data-bill="${i}" value="${HOME.bills[i] || ''}" min="0" max="1000000" step="1" placeholder="kWh"></label>`).join('')}</div>
+            <div class="rowin" style="justify-content:space-between"><span style="font-size:14px">${L('Promedio mensual', 'Monthly average')}</span><b id="hAvg" style="font-size:16px">${fx(HOME.kwh, 0)} kWh/${L('mes', 'mo')}</b></div>
+            <p class="note" id="hBillNote" style="margin:4px 0 0"></p>
             <div class="rowin"><label style="flex:1;font-size:14px">${L('Demanda máxima', 'Maximum demand')} <small style="display:inline">(${L('0 = estimar', '0 = estimate')})</small></label><input class="inp" type="number" id="hDmax" value="${HOME.dmax}" min="0" max="100000" step="0.5" style="width:110px"><span>kW</span></div>
             ${HOME.kind === 'com' ? `<div style="margin-top:8px">${seg('volt', [['bt', L('Baja tensión', 'Low voltage')], ['mt', L('Media tensión', 'Medium voltage')]], HOME.volt)}</div>` : ''}</div></div>
           <div class="q"><span class="qn">3</span><div><b>${L('¿Dónde está?', 'Where is it?')}</b>${HOME.loc ? '' : `<select class="sel" id="hCity">${cityOpts.map(([k, v]) => `<option value="${k}" ${S.site.city === k ? 'selected' : ''}>${v.name}</option>`).join('')}</select>`}
@@ -207,14 +209,23 @@
     const P = $('p-home');
     P.querySelectorAll('[data-h]').forEach(b => b.onclick = () => {
       const k = b.dataset.h, v = b.dataset.v;
-      if (k === 'kind') { HOME.kind = v; HOME.kwh = v === 'res' ? 350 : v === 'apt' ? 4000 : 12000; HOME.dmax = 0; HOME.tilt = v === 'res' ? 20 : 10; HOME.invIdx = 'auto'; HOME.cells = v === 'res' ? 60 : 72; }
+      if (k === 'kind') { HOME.kind = v; HOME.kwh = v === 'res' ? 350 : v === 'apt' ? 4000 : 12000; HOME.bills = [HOME.kwh, HOME.kwh, HOME.kwh]; HOME.dmax = 0; HOME.tilt = v === 'res' ? 20 : 10; HOME.invIdx = 'auto'; HOME.cells = v === 'res' ? 60 : 72; }
       if (k === 'volt') HOME.volt = v;
       if (k === 'cells') HOME.cells = +v;
       EXT.home();
     });
-    const kw = $('hKwh'), kn = $('hKwhN');
-    kw.oninput = () => { kn.value = kw.value; }; kw.onchange = () => { HOME.kwh = +kw.value; update(true); };
-    kn.onchange = () => { HOME.kwh = Math.max(10, +kn.value || 10); kw.value = HOME.kwh; update(true); };
+    const billNote = () => {
+      const v = HOME.bills.filter(x => x > 0), el = $('hBillNote'); if (!el) return;
+      if (v.length < 3) { el.textContent = L(`Con ${v.length} recibo(s) el cálculo es menos preciso; si puedes, completa los tres.`, `With ${v.length} bill(s) the estimate is less accurate; if you can, fill in all three.`); return; }
+      const mx = Math.max(...v), mn = Math.min(...v);
+      el.textContent = mx > 1.4 * mn ? L(`Tu consumo varía bastante (de ${fx(mn, 0)} a ${fx(mx, 0)} kWh). Usamos el promedio; los meses de más consumo pagarán algo de energía a la ENEE.`, `Your consumption varies quite a lot (${fx(mn, 0)} to ${fx(mx, 0)} kWh). We use the average; higher-consumption months will buy some energy from ENEE.`) : '';
+    };
+    $('p-home').querySelectorAll('[data-bill]').forEach(inp => inp.onchange = () => {
+      HOME.bills[+inp.dataset.bill] = Math.max(0, +inp.value || 0);
+      const v = HOME.bills.filter(x => x > 0); HOME.kwh = v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : 10;
+      $('hAvg').textContent = `${fx(HOME.kwh, 0)} kWh/${L('mes', 'mo')}`; billNote(); update(true);
+    });
+    billNote();
     if ($('hDmax')) $('hDmax').onchange = e => { HOME.dmax = Math.max(0, +e.target.value || 0); update(); };
     const pickCity = v => { const S = A().S; HOME.loc = null; const c = A().CITIES[v]; S.site.city = v; S.site.src = 'tmy'; Object.assign(S.site, { lat: c.lat, lon: c.lon, alt: c.alt, Tmin: c.Tmin, Tmax: c.Tmax, tz: -6 }); A().loadTmy().then(() => { EXT.home(); A().renderSummary(); }); };
     if ($('hCity')) $('hCity').onchange = e => pickCity(e.target.value);

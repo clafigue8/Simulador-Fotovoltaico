@@ -14,7 +14,7 @@ Simulador interactivo de un sistema fotovoltaico aislado, desde la celda hasta e
 
 **Inicio: diseña tu sistema en 3D**
 - Vista 3D de una **casa**, un **edificio de apartamentos** o una **nave industrial** con los paneles en el techo, el sol moviéndose según su trayectoria real, **nubes según la nubosidad típica del mes** (datos PVGIS), y **luna y estrellas** de noche.
-- Cinco preguntas sencillas (tipo de inmueble, consumo mensual del recibo de la ENEE, ciudad, panel y inversor) y el simulador **recomienda cuántos paneles** necesitas.
+- Cinco preguntas sencillas (tipo de inmueble, consumo de los **últimos 3 recibos** de la ENEE, ciudad, panel y inversor) y el simulador **recomienda cuántos paneles** necesitas.
 - **Inversores reales del mercado** (Enphase, SolarEdge, Fronius, SMA, Huawei, Sungrow, Sol‑Ark, OutBack) con su modelo de eficiencia; selección automática y diseño de strings.
 - Producción hora por hora, **ahorro con las tarifas vigentes de la ENEE** (CREE, octubre de 2026), pago de excedentes y retorno de la inversión.
 - Opción de usar **tu ubicación actual** (solo en tu navegador, no se guarda).
