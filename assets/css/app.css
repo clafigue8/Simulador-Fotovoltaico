@@ -335,3 +335,4 @@ footer{border-color:var(--line)}
 .top{background:radial-gradient(900px 260px at 10% -40%,rgba(244,114,182,.32),transparent 70%),radial-gradient(800px 260px at 60% -70%,rgba(192,132,252,.22),transparent 70%),radial-gradient(700px 240px at 98% -60%,rgba(147,197,253,.22),transparent 70%),var(--bg)}
 input[type=range]{accent-color:#ec4899}
 .fnode.hot .ic{border-color:#f472b6}
+.q .tip{margin:6px 0 2px}
