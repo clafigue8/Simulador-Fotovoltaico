@@ -142,7 +142,28 @@
       set(p, v); (after || refresh)(p);
     }));
   }
-  const kpi = (label, val, unit = '', cls = '') => `<div class="kpi ${cls}"><small>${label}</small><b>${val}${unit ? `<span>${unit}</span>` : ''}</b></div>`;
+  // Números de resultados redondeados: sin decimales desde 10, un decimal por debajo
+  const roundTxt = v => String(v).replace(/(\d{1,3}(?:,\d{3})+|\d+)\.(\d+)/g, m => { const n = parseFloat(m.replace(/,/g, '')); return n.toLocaleString(LANG === 'en' ? 'en-US' : 'es-HN', { maximumFractionDigits: Math.abs(n) >= 10 ? 0 : 1 }); });
+  const kpi = (label, val, unit = '', cls = '') => `<div class="kpi ${cls}"><small>${label}</small><b>${roundTxt(val)}${unit ? `<span>${unit}</span>` : ''}</b></div>`;
+
+  /* ---------- Mensajes de información ocultos tras un ícono 💡 ---------- */
+  const SKIP = '#hBillNote, #cpMsg, dialog *';
+  function tipify(root) {
+    root.querySelectorAll('.kv > span:nth-child(even)').forEach(el => { if (!el.children.length) { const r = roundTxt(el.textContent); if (r !== el.textContent) el.textContent = r; } });
+    root.querySelectorAll('.alert:not([data-tip]), p.note:not([data-tip])').forEach(el => {
+      if (el.matches(SKIP) || !el.textContent.trim()) return;
+      el.dataset.tip = '1';
+      const bad = el.classList.contains('bad'), warn = el.classList.contains('warn');
+      const t = el.querySelector(':scope > b');
+      const wrap = document.createElement('div'); wrap.className = 'tip' + (bad ? ' bad' : warn ? ' warn' : '');
+      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'tipbtn';
+      btn.innerHTML = `<i>${bad ? '⚠️' : '💡'}</i>${t ? `<span>${t.textContent}</span>` : ''}`;
+      btn.title = L('Ver detalle', 'Show details'); btn.setAttribute('aria-expanded', 'false');
+      el.parentNode.insertBefore(wrap, el); wrap.appendChild(btn); wrap.appendChild(el);
+      btn.onclick = () => { const o = wrap.classList.toggle('open'); btn.setAttribute('aria-expanded', o); };
+    });
+  }
+  new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) tipify(n.parentNode || n); }).observe(document.getElementById('main'), { childList: true, subtree: true });
   const chartBox = (id, h, name) => `<div class="chart"><canvas id="${id}" class="${h}"></canvas></div><div class="btns" style="margin-top:10px;justify-content:flex-end"><button class="btn sm" data-png="${id}" data-name="${name}">PNG</button><button class="btn sm" data-csv="${id}" data-name="${name}">CSV</button></div>`;
   function bindExports(root) {
     root.querySelectorAll('[data-png]').forEach(b => b.onclick = () => CHART.exportPNG($(b.dataset.png), b.dataset.name));

@@ -309,3 +309,20 @@ footer{border-color:var(--line)}
 .fnode b{font-size:13.5px;color:var(--ink)}.fnode span{font-size:13px;color:var(--primary2);font-weight:600}.fnode small{font-size:12px;color:var(--muted)}
 .farrow{align-self:center;color:var(--primary);font-size:22px;opacity:.85}
 @media (max-width:760px){.farrow{display:none}.fnode{min-width:42%}}
+
+/* ---------- información plegable y números normales ---------- */
+.tip{display:inline-flex;flex-direction:column;max-width:100%;margin:8px 8px 0 0;vertical-align:top}
+.tip > .alert,.tip > .note{display:none;margin:6px 0 0}
+.tip.open{display:flex;width:100%}
+.tip.open > .alert,.tip.open > .note{display:block}
+.tipbtn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface2);border-radius:999px;padding:3px 10px 3px 6px;font-size:12.5px;color:var(--muted);cursor:pointer;max-width:100%;text-align:left}
+.tipbtn i{font-style:normal;font-size:15px;line-height:1}
+.tipbtn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tipbtn:hover,.tip.open .tipbtn{border-color:var(--primary);color:var(--ink)}
+.tip.bad .tipbtn{border-color:color-mix(in srgb,var(--bad) 45%,var(--line));color:var(--bad)}
+.tip.warn .tipbtn{border-color:color-mix(in srgb,var(--warn) 45%,var(--line))}
+.tip > .alert > b:first-child{display:none!important}
+.kpi b,.kpis.big .kpi b{font-size:19px;font-weight:600;color:var(--ink);letter-spacing:0}
+.kpi.hl b{color:var(--ink)}.kpi.ok b{color:var(--ok)}.kpi.bad b{color:var(--bad)}
+.kpi b span{font-weight:500}
+.kv span:nth-child(even){font-family:var(--sans);font-size:14.5px;font-weight:500}
