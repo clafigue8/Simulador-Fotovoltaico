@@ -23,7 +23,7 @@
 
   /* ---------- Estado ---------- */
   const S = {
-    tab: 'gen',
+    tab: 'home',
     modId: 3,
     customCell: { Isc: 8.21, Voc: 0.607, n: 1.3, Rs: 0.004, Rsh: 12, Ki: 0.0032, Kv: -0.0021 },
     customMod: { rows: 9, cols: 4, groups: 3, noct: 45, A: 0.65 },
@@ -97,14 +97,15 @@
 
   /* ======================= Navegación ======================= */
   const TABS = [
-    ['gen', 'Generador FV', 'PV generator'], ['iv', 'Curvas y MPPT', 'Curves & MPPT'], ['site', 'Sitio y clima', 'Site & weather'],
-    ['bat', 'Baterías', 'Batteries'], ['conv', 'Conversión y distribución', 'Conversion & distribution'],
+    ['home', 'Inicio', 'Home'], ['gen', 'Generador FV', 'PV generator'], ['iv', 'Curvas y MPPT', 'Curves & MPPT'], ['site', 'Sitio y clima', 'Site & weather'],
+    ['bat', 'Baterías', 'Batteries'], ['conv', 'Conversión y distribución', 'Conversion & distribution'], ['grid', 'Red eléctrica', 'Power grid'],
     ['sim', 'Simulación', 'Simulation'], ['about', 'Metodología', 'Methodology']
   ];
   function renderTabs() {
     $('tabs').innerHTML = TABS.map(([k, es, en], i) => `<button class="tab ${S.tab === k ? 'on' : ''}" data-tab="${k}"><span class="n">${i + 1}</span>${L(es, en)}</button>`).join('');
     $('tabs').querySelectorAll('.tab').forEach(b => b.onclick = () => go(b.dataset.tab));
     document.querySelectorAll('.page').forEach(p => p.classList.toggle('on', p.id === 'p-' + S.tab));
+    document.querySelector('.summary').style.display = S.tab === 'home' || S.tab === 'grid' ? 'none' : '';
   }
   function go(tab) { S.tab = tab; try { history.replaceState(null, '', '#' + tab + (LANG === 'en' ? '?lang=en' : '')); } catch (e) { } renderTabs(); renderPage(); window.scrollTo({ top: 0 }); }
 
@@ -799,7 +800,13 @@
         <li>D. Faiman, "Assessing the outdoor operating temperature of photovoltaic modules," <i>Prog. Photovolt.: Res. Appl.</i>, vol. 16, no. 4, pp. 307–315, 2008.</li>
         <li>T. Huld, R. Müller, and A. Gambardella, "A new solar radiation database for estimating PV performance in Europe and Africa," <i>Solar Energy</i>, vol. 86, no. 6, pp. 1803–1815, 2012. ${L('Datos: PVGIS 5.2, Comisión Europea (JRC).', 'Data: PVGIS 5.2, European Commission (JRC).')}</li>
         <li>A. B. Meinel and M. P. Meinel, <i>Applied Solar Energy: An Introduction</i>. Reading, MA, USA: Addison-Wesley, 1976.</li>
-        <li>${L('Base de datos de módulos CEC (California Energy Commission), distribuida con SAM (NREL) y pvlib-python, versión 2019-03-05.', 'CEC module database (California Energy Commission), distributed with SAM (NREL) and pvlib-python, version 2019-03-05.')}</li>
+        <li>${L('Base de datos de módulos e inversores CEC (California Energy Commission), distribuida con SAM (NREL) y pvlib-python, versión 2019-03-05.', 'CEC module and inverter database (California Energy Commission), distributed with SAM (NREL) and pvlib-python, version 2019-03-05.')}</li>
+        <li>D. L. King, S. Gonzalez, G. M. Galbraith, and W. E. Boyson, "Performance model for grid-connected photovoltaic inverters," Sandia National Laboratories, SAND2007-5036, 2007.</li>
+        <li>IEC TR 61000-3-6:2008, <i>Electromagnetic compatibility (EMC) – Part 3-6: Limits – Assessment of emission limits for the connection of distorting installations to MV, HV and EHV power systems</i>.</li>
+        <li>${L('Comisión Reguladora de Energía Eléctrica (CREE), «Reglamento de la Ley General de la Industria Eléctrica», versión compilada, abr. 2026 (Título VII, Usuarios Autoproductores, Arts. 47–50).', 'Comisión Reguladora de Energía Eléctrica (CREE), “Reglamento de la Ley General de la Industria Eléctrica”, compiled version, Apr. 2026 (Title VII, Self-generating Users, Arts. 47–50).')}</li>
+        <li>${L('CREE, «Norma Técnica de Calidad de Distribución», <i>La Gaceta</i>, No. 34,491, 14 nov. 2017.', 'CREE, “Norma Técnica de Calidad de Distribución”, <i>La Gaceta</i>, No. 34,491, Nov. 14, 2017.')}</li>
+        <li>${L('CREE, Informe de la consulta pública de la Norma Técnica de Usuarios Autoproductores Residenciales y Comerciales, Acuerdo CREE-25-2022.', 'CREE, Public consultation report on the Technical Standard for Residential and Commercial Self-generating Users, Agreement CREE-25-2022.')}</li>
+        <li>${L('CREE, Tarifas vigentes ENEE (a partir de octubre de 2026), cree.gob.hn.', 'CREE, ENEE tariffs in force (from October 2026), cree.gob.hn.')}</li>
       </ol></div>
       <div class="card" style="margin-top:24px"><h3>${L('Limitaciones', 'Limitations')}</h3><ul class="refs">
         <li>${L('Los parámetros de batería e inversor son típicos por tecnología, no de un modelo comercial específico.', 'Battery and inverter parameters are typical per technology, not from a specific commercial model.')}</li>
@@ -812,7 +819,8 @@
   /* ======================= General ======================= */
   function renderPage() {
     stopPlay();
-    ({ gen: pageGen, iv: pageIV, site: pageSite, bat: pageBat, conv: pageConv, sim: pageSim, about: pageAbout })[S.tab]();
+    const ext = window.PAGES_EXT || {};
+    ({ gen: pageGen, iv: pageIV, site: pageSite, bat: pageBat, conv: pageConv, sim: pageSim, about: pageAbout, home: ext.home, grid: ext.grid })[S.tab]();
   }
   function refresh() {
     ensure(); compute(); renderSummary();
@@ -830,7 +838,8 @@
     $('foot').innerHTML = `${L('Seminario de Investigación · Ingeniería Eléctrica · Universidad Nacional Autónoma de Honduras', 'Research Seminar · Electrical Engineering · National Autonomous University of Honduras')}<br>Claudia Figueroa · Dennis Johan López · M.Sc. Daniel Flores`;
     applyModule(); compute(); renderTabs(); renderSummary(); renderPage();
   }
-  window.addEventListener('resize', () => { if (S.tab === 'iv') { drawIV(); renderValidation(); } if (S.tab === 'sim') { drawDay(); drawYear(); } if (S.tab === 'site') drawMonthly(); if (S.tab === 'bat' || S.tab === 'conv') renderPage(); });
+  window.APP = { S, get LANG() { return LANG; }, L, fx, esc, css, kpi, chartBox, bindExports, go, refresh: () => refresh(), applyModule, loadTmy, useTmy, CITIES, renderSummary };
+  window.addEventListener('resize', () => { if (S.tab === 'iv') { drawIV(); renderValidation(); } if (S.tab === 'sim') { drawDay(); drawYear(); } if (S.tab === 'site') drawMonthly(); if (S.tab === 'bat' || S.tab === 'conv' || S.tab === 'grid') renderPage(); });
   document.querySelectorAll('.lang button').forEach(b => b.onclick = () => setLang(b.dataset.lang));
 
   // inicio

@@ -6,9 +6,24 @@ Simulador interactivo de un sistema fotovoltaico aislado, desde la celda hasta e
 
 *English version:* https://simuladorfotovoltaico.online/?lang=en · [Read in English](#english)
 
+![Diseño del sistema en 3D](docs/inicio-3d.png)
+
 ![Generador fotovoltaico con sombra en una celda](docs/captura.png)
 
 ## Qué hace
+
+**Inicio: diseña tu sistema en 3D**
+- Vista 3D de una **vivienda** o de una **nave industrial** con los paneles en el techo y el sol moviéndose según su trayectoria real en la ciudad elegida.
+- Cinco preguntas sencillas (tipo de inmueble, consumo mensual del recibo de la ENEE, ciudad, panel y inversor) y el simulador **recomienda cuántos paneles** necesitas.
+- **Inversores reales del mercado** (Enphase, SolarEdge, Fronius, SMA, Huawei, Sungrow, Sol‑Ark, OutBack) con su modelo de eficiencia; selección automática y diseño de strings.
+- Producción hora por hora, **ahorro con las tarifas vigentes de la ENEE** (CREE, octubre de 2026), pago de excedentes y retorno de la inversión.
+- **Revisión de la normativa hondureña** para autoproductores: Reglamento de la Ley General de la Industria Eléctrica (Arts. 47–50) y Norma Técnica de Usuarios Autoproductores.
+
+**Red eléctrica nacional**
+- Punto de conexión con el transformador de la distribuidora: cortocircuito y elevación de tensión por la exportación solar.
+- **Armónicos** de cargas electrónicas, variadores e inversor, comparados con los límites de la **Norma Técnica de Calidad de Distribución** (CREE, 2017).
+- **Arranque de motores** (directo, estrella‑triángulo, arrancador suave, variador): corriente de arranque y caída de tensión.
+
 
 **Generador fotovoltaico**
 - **Módulos comerciales reales** (Kyocera, Renogy, Canadian Solar, LONGi, Trina) con datos de hoja técnica de la base de datos CEC, o un módulo personalizado.
@@ -38,12 +53,13 @@ Simulador interactivo de un sistema fotovoltaico aislado, desde la celda hasta e
 
 No necesita instalación: abre el enlace de arriba. Para usarlo sin internet, descarga el repositorio completo y abre `index.html`.
 
-1. **Generador FV**: elige el módulo, arma el arreglo y aplica sombras.
-2. **Curvas y MPPT**: revisa los máximos, el algoritmo P&O y los puntos calientes.
-3. **Sitio y clima**: elige la ciudad, la inclinación y las pérdidas.
-4. **Baterías** y **Conversión y distribución**: configura el resto del sistema.
-5. **Simulación**: simula un día o un año completo.
-6. Usa el botón **ES / EN** (arriba a la derecha) para cambiar el idioma.
+1. **Inicio**: responde las cinco preguntas y mira la recomendación en 3D.
+2. **Generador FV**: elige el módulo, arma el arreglo y aplica sombras.
+3. **Curvas y MPPT**: revisa los máximos, el algoritmo P&O y los puntos calientes.
+4. **Sitio y clima**: elige la ciudad, la inclinación y las pérdidas.
+5. **Baterías**, **Conversión y distribución** y **Red eléctrica**: configura el resto del sistema.
+6. **Simulación**: simula un día o un año completo.
+7. Usa el botón **ES / EN** (arriba a la derecha) para cambiar el idioma.
 
 ![Simulación anual con flujo de energía](docs/simulacion.png)
 
@@ -53,6 +69,8 @@ Interactive simulator of a stand-alone photovoltaic system, from a single cell u
 
 **▶ Open the simulator:** https://simuladorfotovoltaico.online/?lang=en
 
+- **3D home page**: a house or an industrial building with panels and the real sun path; five simple questions recommend the number of panels, with real market inverters, ENEE tariffs, savings, payback and a check against Honduran self-generation regulations.
+- **National grid tab**: voltage rise, harmonics against the CREE Distribution Quality Standard limits, and motor starting.
 - **Real commercial modules** (CEC database) with automatic parameter fitting (Villalva method) and **validation against the datasheet** (error below 0.4 %).
 - **Single-diode model with Bishop reverse breakdown**: hot-spot power of shaded cells, Schottky bypass and blocking diodes.
 - **Perturb and Observe MPPT** that can get trapped on a local maximum under partial shading.

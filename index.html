@@ -18,7 +18,7 @@
       <div class="logo" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 32 32"><circle cx="22" cy="9" r="4.5" fill="#e3a63c"/><path d="M3 27l5.5-12h15L28 27z" fill="#9cbcf0"/><path d="M8.5 15L3 27M13.5 15l-2 12M18.5 15l2 12M23.5 15L28 27M6 21h20" stroke="#1d3b6e" stroke-width="1.2"/></svg></div>
       <div>
         <h1 data-en="Photovoltaic System Simulator">Simulador de Sistemas Fotovoltaicos</h1>
-        <p data-en="Stand-alone PV systems · Research Seminar, Electrical Engineering, UNAH">Sistemas fotovoltaicos aislados · Seminario de Investigación, Ingeniería Eléctrica UNAH</p>
+        <p data-en="Residential and industrial PV systems · Research Seminar, Electrical Engineering, UNAH">Sistemas fotovoltaicos residenciales e industriales · Seminario de Investigación, Ingeniería Eléctrica UNAH</p>
       </div>
     </div>
     <div class="spacer"></div>
@@ -28,23 +28,31 @@
 <nav class="nav" aria-label="Secciones"><div class="wrap" id="tabs"></div></nav>
 <div class="summary"><div class="wrap" id="summary"></div></div>
 <main class="wrap" id="main">
+  <section class="page" id="p-home"></section>
   <section class="page" id="p-gen"></section>
   <section class="page" id="p-iv"></section>
   <section class="page" id="p-site"></section>
   <section class="page" id="p-bat"></section>
   <section class="page" id="p-conv"></section>
+  <section class="page" id="p-grid"></section>
   <section class="page" id="p-sim"></section>
   <section class="page" id="p-about"></section>
 </main>
 <footer id="foot"></footer>
 <dialog id="dlg"><div id="dlgBody"></div></dialog>
 
+<script src="assets/vendor/three.min.js"></script>
+<script src="assets/vendor/OrbitControls.js"></script>
 <script src="data/modules.js"></script>
+<script src="data/inverters.js"></script>
 <script src="assets/js/pv.js"></script>
 <script src="assets/js/solar.js"></script>
 <script src="assets/js/system.js"></script>
 <script src="assets/js/sim.js"></script>
 <script src="assets/js/charts.js"></script>
+<script src="assets/js/scene3d.js"></script>
+<script src="assets/js/home.js"></script>
+<script src="assets/js/grid.js"></script>
 <script src="assets/js/ui.js"></script>
 </body>
 </html>
