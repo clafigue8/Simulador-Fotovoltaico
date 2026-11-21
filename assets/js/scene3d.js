@@ -159,6 +159,46 @@
       g.rotation.y = -(azim - 180) * rad;
       return { W, D, H };
     }
+    /* ---------- edificio de apartamentos ---------- */
+    function buildApartments(n, mod, tilt, azim) {
+      const pw = mod.pw, ph = mod.ph, gap = 0.02, floors = 7, fh = 3.1;
+      const L = ph * Math.cos(tilt * rad), pitch = Math.max(L + 0.9, L * 2.0);
+      let cols = Math.max(5, Math.round(Math.sqrt(n * pitch / (pw + gap)) * 1.25)), rows = Math.ceil(n / cols);
+      const W = Math.max(16, cols * (pw + gap) + 3), D = Math.max(12, rows * pitch + 3.5), H = floors * fh;
+      span = Math.max(W, D, H) * 1.5 + 18;
+      const g = new THREE.Group(); world.add(g); const old = world; world = g;
+      const facade = new THREE.MeshStandardMaterial({ color: 0xe9e4da, roughness: 0.85 });
+      const accent = new THREE.MeshStandardMaterial({ color: 0x8c5a43, roughness: 0.8 });
+      box(W, H, D, facade, 0, H / 2, 0);
+      box(W + 0.4, 0.5, D + 0.4, M.wall2, 0, 0.25, 0);
+      // ventanas y balcones (cara sur y este)
+      const winGeo = new THREE.BoxGeometry(1.5, 1.5, 0.12), wins = [];
+      for (let f = 0; f < floors; f++) for (let x = -W / 2 + 2; x <= W / 2 - 1.9; x += 2.6) { wins.push([x, f * fh + 1.7, D / 2 + 0.03, 0]); wins.push([x, f * fh + 1.7, -D / 2 - 0.03, 0]); }
+      for (let f = 0; f < floors; f++) for (let z = -D / 2 + 2; z <= D / 2 - 1.9; z += 2.6) { wins.push([W / 2 + 0.03, f * fh + 1.7, z, Math.PI / 2]); wins.push([-W / 2 - 0.03, f * fh + 1.7, z, Math.PI / 2]); }
+      const wi = new THREE.InstancedMesh(winGeo, M.glass, wins.length), o = new THREE.Object3D();
+      wins.forEach((w, i) => { o.position.set(w[0], w[1], w[2]); o.rotation.set(0, w[3], 0); o.updateMatrix(); wi.setMatrixAt(i, o.matrix); }); world.add(wi);
+      for (let f = 1; f < floors; f++) { box(W * 0.42, 0.18, 1.2, M.trim, -W * 0.22, f * fh + 0.05, D / 2 + 0.6); box(W * 0.42, 0.9, 0.06, M.glass, -W * 0.22, f * fh + 0.55, D / 2 + 1.18, false); }
+      box(1.2, H, 0.3, accent, W * 0.12, H / 2, D / 2 + 0.15); box(1.2, H, 0.3, accent, -W / 2 + 0.6, H / 2, D / 2 + 0.15);
+      box(3.2, 2.6, 0.2, M.glass, W * 0.3, 1.3, D / 2 + 0.1, false);
+      // azotea: pretil, cuarto de máquinas y tanque
+      box(W, 1.0, 0.25, facade, 0, H + 0.5, D / 2 - 0.12); box(W, 1.0, 0.25, facade, 0, H + 0.5, -D / 2 + 0.12);
+      box(0.25, 1.0, D, facade, W / 2 - 0.12, H + 0.5, 0); box(0.25, 1.0, D, facade, -W / 2 + 0.12, H + 0.5, 0);
+      box(3, 2.6, 3, facade, -W / 2 + 2, H + 1.3, -D / 2 + 2);
+      const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 1.6, 20), M.dark); tank.position.set(-W / 2 + 2, H + 3.4, -D / 2 + 2); tank.castShadow = true; world.add(tank);
+      // filas de paneles
+      const list = [], z0 = D / 2 - 1.6 - L / 2, y0 = H + 0.45 + Math.sin(tilt * rad) * ph / 2;
+      for (let i = 0; i < n; i++) {
+        const r = Math.floor(i / cols), c = i % cols, rowCount = r === rows - 1 ? n - cols * (rows - 1) : cols;
+        list.push({ x: (c - (rowCount - 1) / 2) * (pw + gap) + 1.2, y: y0, z: z0 - r * pitch, rx: tilt * rad });
+      }
+      panels(list, pw, ph);
+      tree(-W / 2 - 4, D / 2 + 4, 1.4); tree(W / 2 + 5, D / 2 + 2, 1.2); tree(W / 2 + 4, -D / 2 - 3, 1.5);
+      box(W + 30, 0.02, 8, M.road, 0, 0.01, D / 2 + 8, false, true);
+      gridPole(-W / 2 - 7, D / 2 + 5, 3.5, -W / 2, D / 2 - 2, 10);
+      world = old;
+      g.rotation.y = -(azim - 180) * rad;
+      return { W, D, H };
+    }
     function gridPole(x, z, hy, tx, tz, h = 9) {
       const p = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.2, h, 10), M.pole); p.position.set(x, h / 2, z); p.castShadow = true; world.add(p);
       box(2.4, 0.12, 0.12, M.pole, x, h - 0.6, z);
@@ -170,8 +210,8 @@
     function build(o) {
       scene.remove(world); world.traverse(x => { if (x.geometry) x.geometry.dispose(); }); world = new THREE.Group(); scene.add(world);
       const ground = new THREE.Mesh(new THREE.CircleGeometry(600, 64), M.grass); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; world.add(ground);
-      const dims = o.kind === 'com' ? buildPlant(o.n, o.mod, o.tilt, o.az) : buildHouse(o.n, o.mod, o.tilt, o.az);
-      const d = span * 1.15; camera.position.set(d * 0.5, d * 0.42, d * 0.82); controls.target.set(0, dims.H * 0.45, 0); controls.update();
+      const dims = o.kind === 'com' ? buildPlant(o.n, o.mod, o.tilt, o.az) : o.kind === 'apt' ? buildApartments(o.n, o.mod, o.tilt, o.az) : buildHouse(o.n, o.mod, o.tilt, o.az);
+      const d = span * 1.15; camera.position.set(d * 0.5, dims.H * 0.6 + d * 0.42, d * 0.82); controls.target.set(0, dims.H * (o.kind === 'apt' ? 0.7 : 0.45), 0); controls.update();
       const sc = sun.shadow.camera, e = span * 0.75; sc.left = -e; sc.right = e; sc.top = e; sc.bottom = -e; sc.near = 1; sc.far = span * 4; sc.updateProjectionMatrix();
       need = true; return dims;
     }
@@ -228,5 +268,88 @@
     g.fillStyle = gr; g.fillRect(0, 0, 2, 256); skyT.needsUpdate = true; return skyT;
   }
 
-  window.SCENE3D = { create };
+  /* ---------- Vista de montaje: equipos etiquetados ---------- */
+  function label(THREE, text, color = '#1d3b6e') {
+    const c = document.createElement('canvas'), g = c.getContext('2d'), f = 34;
+    g.font = `600 ${f}px Inter, system-ui, sans-serif`; const w = Math.ceil(g.measureText(text).width) + 40, h = f + 26;
+    c.width = w; c.height = h; g.font = `600 ${f}px Inter, system-ui, sans-serif`;
+    g.fillStyle = 'rgba(255,255,255,.96)'; const r = 14; g.beginPath(); g.moveTo(r, 0); g.arcTo(w, 0, w, h, r); g.arcTo(w, h, 0, h, r); g.arcTo(0, h, 0, 0, r); g.arcTo(0, 0, w, 0, r); g.fill();
+    g.fillStyle = color; g.fillRect(0, 0, 8, h); g.fillStyle = '#0f1b2d'; g.textBaseline = 'middle'; g.fillText(text, 22, h / 2 + 1);
+    const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true })); sp.scale.set(w / 118, h / 118, 1); sp.renderOrder = 10; return sp;
+  }
+  function createInstall(container) {
+    const THREE = T(); if (THREE.ColorManagement) THREE.ColorManagement.legacyMode = false;
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    container.appendChild(renderer.domElement);
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0xdfe9f4);
+    const camera = new THREE.PerspectiveCamera(36, 1, 0.3, 500);
+    const controls = new THREE.OrbitControls(camera, renderer.domElement); controls.enableDamping = true; controls.maxPolarAngle = 88 * rad; controls.minDistance = 6; controls.maxDistance = 80;
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x8a9a70, 0.75));
+    const sun = new THREE.DirectionalLight(0xfff1dc, 1.4); sun.position.set(14, 26, 18); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+    Object.assign(sun.shadow.camera, { left: -25, right: 25, top: 25, bottom: -25, near: 1, far: 90 }); scene.add(sun);
+    let need = true, alive = true, root = new THREE.Group(); scene.add(root);
+    const ro = new ResizeObserver(() => { const w = container.clientWidth, h = container.clientHeight; renderer.setSize(w, h, false); renderer.domElement.style.width = '100%'; renderer.domElement.style.height = '100%'; camera.aspect = w / Math.max(h, 1); camera.updateProjectionMatrix(); need = true; }); ro.observe(container);
+    controls.addEventListener('change', () => need = true);
+    (function loop() { if (!alive) return; requestAnimationFrame(loop); controls.update(); if (need) { renderer.render(scene, camera); need = false; } })();
+    const mat = (c, r = 0.7, m = 0.1) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m });
+    const PM = new THREE.MeshStandardMaterial({ map: cellTex(THREE), roughness: 0.3, metalness: 0.35 });
+    function b(w, h, d, m, x, y, z, parent = root) { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; parent.add(o); return o; }
+    function tube(pts, r, m) { const cv = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p)), false, 'catmullrom', 0.05); const o = new THREE.Mesh(new THREE.TubeGeometry(cv, 64, r, 8, false), m); o.castShadow = true; root.add(o); return o; }
+    function tag(text, x, y, z, ax, ay, az, color) {
+      const s = label(THREE, text, color); s.position.set(x, y, z); root.add(s);
+      const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x, y - 0.35, z), new THREE.Vector3(ax, ay, az)]);
+      root.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0x5d6b80 })));
+    }
+    function build(c, d, tx) {
+      scene.remove(root); root = new THREE.Group(); scene.add(root);
+      const W = 14, D = 8, H = 4.2;
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), mat(0x8fb069, 1)); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; root.add(ground);
+      b(W, H, D, mat(0xf1ece2, 0.9), 0, H / 2, 0);
+      b(W + 0.3, 0.35, D + 0.3, mat(0xc9ced6, 0.8), 0, H + 0.17, 0);
+      // paneles en la azotea (representativos)
+      const pw = 1.0, ph = 1.7, tilt = 15 * rad, cols = 8, rows = 2, shown = Math.min(c.n, cols * rows);
+      for (let i = 0; i < shown; i++) {
+        const r = Math.floor(i / cols), k = i % cols, g = new THREE.Group();
+        g.position.set(-W / 2 + 1.4 + k * (pw + 0.05) + pw / 2, H + 0.75, D / 2 - 1.6 - r * 2.6); g.rotation.x = tilt;
+        b(pw, 0.04, ph, PM, 0, 0, 0, g); b(pw + 0.04, 0.03, ph + 0.04, mat(0xc9ced6, 0.35, 0.8), 0, -0.02, 0, g); root.add(g);
+        b(0.05, 0.5, 0.05, mat(0x9aa2ad, 0.5, 0.7), g.position.x, H + 0.5, g.position.z - 0.6);
+      }
+      tag(tx.panels, -W / 2 + 4.6, H + 2.4, D / 2 - 1.6, -W / 2 + 4.6, H + 1.0, D / 2 - 1.6, '#c98a1b');
+      // equipos en la fachada (z = D/2)
+      const zf = D / 2 + 0.12, y0 = 1.6, red = mat(0xc0392b, 0.6), blk = mat(0x222831, 0.6), cond = mat(0x9aa2ad, 0.5, 0.6), grn = mat(0x2e7d55, 0.6);
+      let x = -4.8;
+      if (!tx.micro) { b(0.55, 0.7, 0.2, mat(0xd9dde3, 0.5, 0.3), x, y0 + 0.2, zf); b(0.12, 0.12, 0.05, red, x + 0.12, y0 + 0.25, zf + 0.12); tag(tx.dc, x - 1.2, y0 - 0.9, zf + 1.6, x, y0 - 0.1, zf, '#c0392b'); }
+      // tubería desde la azotea
+      tube([[-W / 2 + 1.2, H + 0.4, D / 2 - 1.2], [-W / 2 + 1.2, H + 0.4, zf], [-4.8 - (tx.micro ? 0 : 0), H + 0.1, zf], [-4.8, y0 + 0.6, zf]], 0.045, tx.micro ? cond : red);
+      const xi = -2.6;
+      b(0.75, 0.95, 0.24, mat(0xf4f5f7, 0.45, 0.2), xi, y0 + 0.25, zf); b(0.32, 0.12, 0.03, mat(0x1d3b6e, 0.3, 0.3), xi, y0 + 0.5, zf + 0.13);
+      tag(tx.inv, xi - 0.6, y0 + 1.75, zf + 1.6, xi, y0 + 0.75, zf, '#7b5ea7');
+      tube([[-4.8, y0 - 0.15, zf], [-4.8, y0 - 0.45, zf], [xi, y0 - 0.45, zf], [xi, y0 - 0.23, zf]], 0.04, cond);
+      const xa = -0.8; b(0.42, 0.55, 0.18, mat(0xd9dde3, 0.5, 0.3), xa, y0 + 0.2, zf); b(0.08, 0.2, 0.05, blk, xa, y0 + 0.2, zf + 0.1);
+      tag(tx.ac, xa + 0.3, y0 - 1.0, zf + 1.8, xa, y0 - 0.05, zf, '#1d3b6e');
+      tube([[xi, y0 - 0.23, zf], [xi, y0 - 0.6, zf], [xa, y0 - 0.6, zf], [xa, y0 - 0.08, zf]], 0.04, cond);
+      const xp = 1.0; b(0.7, 1.1, 0.16, mat(0xa7afba, 0.5, 0.4), xp, y0 + 0.1, zf);
+      tag(tx.panel, xp + 0.8, y0 + 2.3, zf + 1.4, xp, y0 + 0.65, zf, '#2e7d55');
+      tube([[xa, y0 - 0.08, zf], [xa, y0 - 0.75, zf], [xp, y0 - 0.75, zf], [xp, y0 - 0.45, zf]], 0.04, cond);
+      const xm = 3.0; b(0.36, 0.5, 0.16, mat(0xd9dde3, 0.5, 0.3), xm, y0 + 0.4, zf); const gl = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.12, 24), mat(0xbfd3e6, 0.1, 0.2)); gl.rotation.x = Math.PI / 2; gl.position.set(xm, y0 + 0.45, zf + 0.12); root.add(gl);
+      tag(tx.meter, xm + 1.3, y0 + 1.25, zf + 1.6, xm, y0 + 0.7, zf, '#2b5aa6');
+      tube([[xp, y0 + 0.65, zf], [xp, y0 + 0.95, zf], [xm, y0 + 0.95, zf], [xm, y0 + 0.65, zf]], 0.04, cond);
+      // poste y transformador
+      const px = 9.5, pz = D / 2 + 1.2; const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.18, 9, 12), mat(0x8a8f96)); pole.position.set(px, 4.5, pz); pole.castShadow = true; root.add(pole);
+      b(2.2, 0.1, 0.1, mat(0x8a8f96), px, 8.4, pz); const xf = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.85, 16), mat(0x7c8590, 0.5, 0.5)); xf.position.set(px + 0.42, 7.3, pz); xf.castShadow = true; root.add(xf);
+      tag(tx.grid, px + 1.8, 9.6, pz, px + 0.4, 7.6, pz, '#334155');
+      tube([[px + 0.3, 7.6, pz], [(px + xm) / 2, 4.2, (pz + zf) / 2], [xm, y0 + 1.25, zf + 0.05]], 0.02, blk);
+      // tierra
+      const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.6, 8), mat(0xb87333, 0.3, 0.8)); rod.position.set(xp + 0.6, 0.15, zf + 0.6); root.add(rod);
+      tube([[xp, y0 - 0.45, zf], [xp, 0.05, zf], [xp + 0.6, 0.05, zf + 0.6]], 0.02, grn);
+      tag(tx.ground, xp + 2.4, 0.5, zf + 2.2, xp + 0.6, 0.3, zf + 0.6, '#2e7d55');
+      camera.position.set(2.5, 6.8, 21); controls.target.set(0.8, 2.6, 0); controls.update(); need = true;
+    }
+    return { build, dispose() { alive = false; ro.disconnect(); renderer.dispose(); container.innerHTML = ''; } };
+  }
+
+  window.SCENE3D = { create, createInstall };
 })();

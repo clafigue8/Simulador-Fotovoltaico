@@ -13,11 +13,20 @@ Simulador interactivo de un sistema fotovoltaico aislado, desde la celda hasta e
 ## Qué hace
 
 **Inicio: diseña tu sistema en 3D**
-- Vista 3D de una **vivienda** o de una **nave industrial** con los paneles en el techo y el sol moviéndose según su trayectoria real en la ciudad elegida.
+- Vista 3D de una **casa**, un **edificio de apartamentos** o una **nave industrial** con los paneles en el techo y el sol moviéndose según su trayectoria real en la ciudad elegida.
 - Cinco preguntas sencillas (tipo de inmueble, consumo mensual del recibo de la ENEE, ciudad, panel y inversor) y el simulador **recomienda cuántos paneles** necesitas.
 - **Inversores reales del mercado** (Enphase, SolarEdge, Fronius, SMA, Huawei, Sungrow, Sol‑Ark, OutBack) con su modelo de eficiencia; selección automática y diseño de strings.
 - Producción hora por hora, **ahorro con las tarifas vigentes de la ENEE** (CREE, octubre de 2026), pago de excedentes y retorno de la inversión.
-- **Revisión de la normativa hondureña** para autoproductores: Reglamento de la Ley General de la Industria Eléctrica (Arts. 47–50) y Norma Técnica de Usuarios Autoproductores.
+- Opción de usar **tu ubicación actual** (solo en tu navegador, no se guarda).
+
+**Normativa e instalación**
+- Revisión de la ley hondureña para autoproductores (RLGIE, Arts. 47–50).
+- **Montaje del sistema en 3D** con los equipos etiquetados y **diagrama unifilar** con protecciones y conductores calculados (criterios NEC 690, 705 y 250).
+- Paneles de última generación (2026) y guía de cableado, protecciones y demás dispositivos con marcas de referencia.
+
+![Montaje del sistema en 3D](docs/montaje-3d.png)
+
+![Diagrama unifilar](docs/diagrama-unifilar.png)
 
 **Red eléctrica nacional**
 - Punto de conexión con el transformador de la distribuidora: cortocircuito y elevación de tensión por la exportación solar.

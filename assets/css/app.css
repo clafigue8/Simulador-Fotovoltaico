@@ -204,6 +204,8 @@ dialog textarea{width:100%;height:360px;font:12.5px var(--mono);border:1px solid
 .checks li{display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;font-size:13.5px;line-height:1.5}
 .checks li i{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:700;font-size:13px;background:var(--okSoft);color:var(--ok)}
 .checks li.bad i{background:var(--badSoft);color:var(--bad)}.checks li.warn i{background:var(--warnSoft);color:var(--warn)}.checks li.info i{background:var(--primarySoft);color:var(--primary)}
+.checks.cols2{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 28px}
+.inst3d{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--line)}.inst3d .c3d{min-height:520px}
 .checks li b{display:block;font-size:14px;color:var(--ink)}.checks li span{color:var(--muted)}
 details summary{cursor:pointer;font-weight:600;color:var(--primary);font-size:14px}
 @media (max-width:1200px){.hero{grid-template-columns:1fr}.g-main,.g-side{grid-template-columns:1fr}.g-3{grid-template-columns:1fr 1fr}.blocks{grid-template-columns:repeat(2,1fr)}}
@@ -215,6 +217,6 @@ details summary{cursor:pointer;font-weight:600;color:var(--primary);font-size:14
   .field{grid-template-columns:minmax(0,1fr) 120px}
   .flow .row{grid-template-columns:130px minmax(0,1fr) 80px;font-size:13px}
   .intro h2{font-size:20px}
-  .hint{display:none}.hero3d{min-height:440px}.c3d{min-height:380px}.hud{font-size:12px;min-width:0;padding:8px 12px}.hud .big{font-size:20px}
+  .checks.cols2{grid-template-columns:1fr}.hint{display:none}.hero3d{min-height:440px}.c3d{min-height:380px}.hud{font-size:12px;min-width:0;padding:8px 12px}.hud .big{font-size:20px}
 }
 @media print{.nav,.lang,.tools,.btn{display:none!important}.page{display:block!important;break-after:page}body{background:#fff}}
