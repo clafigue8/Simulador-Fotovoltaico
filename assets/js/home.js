@@ -24,7 +24,7 @@
   const GASPROF = [.4, .35, .35, .35, .4, .6, .85, .95, 1, 1, 1, 1, 1, 1, 1, 1, 1, .95, .9, .85, .75, .6, .5, .45];
   const HOME = {
     kind: 'res', kwh: 350, bills: [350, 350, 350], dmax: 0, cover: 0.9, fmt: 'res', modId: null, invIdx: 'auto', tilt: 20, az: 180,
-    volt: 'bt', cost: { ...COST }, fx: FX_DEFAULT, hour: 10.5, month: 3, farmMW: 5, price: 111.27
+    volt: 'bt', cost: { ...COST }, fx: FX_DEFAULT, hour: 10.5, month: 3, day: 15, farmMW: 5, price: 111.27
   };
   let scene = null, calc = null, anim = 0, lastT = 0;
 
@@ -208,7 +208,7 @@
       <div class="hero">
         <div class="hero3d card" id="h3d"><div id="h3dc" class="c3d"></div>
           <div class="hud" id="hud"></div>
-          <div class="hctl"><button class="btn pri sm" id="hPlay">▶</button><input type="range" id="hHour" min="0" max="24" step="0.05" value="${HOME.hour}" aria-label="${L('Hora del día', 'Time of day')}"><select class="inp" id="hMonth" style="width:120px;font-family:var(--sans)">${L('Enero Febrero Marzo Abril Mayo Junio Julio Agosto Septiembre Octubre Noviembre Diciembre', 'January February March April May June July August September October November December').split(' ').map((n, i) => `<option value="${i}" ${i === HOME.month ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+          <div class="hctl"><button class="btn pri sm" id="hPlay">▶</button><input type="range" id="hHour" min="0" max="24" step="0.05" value="${HOME.hour}" aria-label="${L('Hora del día', 'Time of day')}"><select class="inp" id="hMonth" style="width:120px;font-family:var(--sans)">${L('Enero Febrero Marzo Abril Mayo Junio Julio Agosto Septiembre Octubre Noviembre Diciembre', 'January February March April May June July August September October November December').split(' ').map((n, i) => `<option value="${i}" ${i === HOME.month ? 'selected' : ''}>${n}</option>`).join('')}</select><select class="inp" id="hDay" style="width:${'72px'};font-family:var(--sans)" aria-label="${L('Día del mes', 'Day of month')}">${Array.from({ length: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][HOME.month] }, (_, k) => `<option value="${k + 1}" ${k + 1 === HOME.day ? 'selected' : ''}>${k + 1}</option>`).join('')}</select></div>
           <p class="hint">${L('Arrastra para girar · rueda o pellizco para acercar', 'Drag to rotate · scroll or pinch to zoom')}</p>
         </div>
         <div class="card wiz">
@@ -295,7 +295,9 @@
     $('hCost').onchange = e => { HOME.cost[HOME.kind] = +e.target.value; update(); };
     $('hFx').onchange = e => { HOME.fx = +e.target.value; update(); };
     $('hHour').oninput = e => { stop(); HOME.hour = +e.target.value; sunUpdate(); };
-    $('hMonth').onchange = e => { HOME.month = +e.target.value; sunUpdate(); };
+    const fillDays = () => { const n = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][HOME.month]; HOME.day = Math.min(HOME.day, n); $('hDay').innerHTML = Array.from({ length: n }, (_, k) => `<option value="${k + 1}" ${k + 1 === HOME.day ? 'selected' : ''}>${k + 1}</option>`).join(''); };
+    $('hMonth').onchange = e => { HOME.month = +e.target.value; fillDays(); sunUpdate(); };
+    $('hDay').onchange = e => { HOME.day = +e.target.value; sunUpdate(); };
     $('hPlay').onclick = () => { if (anim) return stop(); if (HOME.hour >= 23.9) HOME.hour = 0; $('hPlay').textContent = '❚❚'; anim = requestAnimationFrame(play); };
     $('hGo').onclick = applyDetailed;
     $('hGrid').onclick = () => A().go('grid');
@@ -400,22 +402,20 @@
   }
   function sunUpdate() {
     if (!calc) return;
-    const S = A().S, doy = [15, 46, 74, 105, 135, 166, 196, 227, 258, 288, 319, 349][HOME.month];
+    const S = A().S, md = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31], doy = md.slice(0, HOME.month).reduce((a, b) => a + b, 0) + Math.min(HOME.day, md[HOME.month]);
     const site = { ...S.site, tilt: HOME.tilt, az: HOME.az };
     const sp = window.SOLAR.position(site, doy, HOME.hour);
     const path = []; for (let h = 4.5; h <= 19.5; h += 0.25) { const p = window.SOLAR.position(site, doy, h); path.push({ az: p.az, el: p.el }); }
-    // potencia típica del mes a esa hora (promedio de los días del mes con PVGIS)
+    // producción a esa hora del día elegido (año meteorológico típico de PVGIS)
     const t = A().useTmy(), Sx = { ...S, site, loss: { soil: 0, mism: 0, iam: true, degr: 0, year: 1 }, modInfo: { noct: calc.m.noct } };
-    const md = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31], d0 = md.slice(0, HOME.month).reduce((a, b) => a + b, 0) + 1;
-    let pk = 0, G = 0, gh = 0, cs = 0; for (let d = d0; d < d0 + md[HOME.month]; d++) { const w = window.SIM.weatherAt(Sx, t, d, HOME.hour); G += w.Geff; pk += w.Geff / 1000 * (1 + calc.m.gP / 100 * (w.Tc - 25)) * 0.93;
-      for (const hh of [9.5, 11.5, 13.5]) { const w2 = window.SIM.weatherAt(Sx, t, d, hh); gh += w2.irr.ghi; cs += window.SOLAR.clearSky(site, w2.sp).ghi; } }
-    pk /= md[HOME.month]; G /= md[HOME.month];
+    const w = window.SIM.weatherAt(Sx, t, doy, HOME.hour), G = w.Geff, pk = w.Geff / 1000 * (1 + calc.m.gP / 100 * (w.Tc - 25)) * 0.93;
+    let gh = 0, cs = 0; for (let hh2 = 8.5; hh2 <= 15.5; hh2 += 1) { const w2 = window.SIM.weatherAt(Sx, t, doy, hh2); gh += w2.irr.ghi; cs += window.SOLAR.clearSky(site, w2.sp).ghi; }
     const cloud = t ? Math.max(0, Math.min(1, (1 - gh / Math.max(cs, 1)) * 1.6)) : 0.25;
     const Pdc = pk * calc.kWp * 1000 / calc.nInv, Pac = sandia(calc.inv, Pdc) * calc.nInv / 1000;
     if (scene) scene.setSun(sp.az, sp.el, path, Pac / Math.max(calc.kWac, 0.001), cloud);
     const hh = h => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60) % 60).padStart(2, '0')}`;
     const city = HOME.loc ? L('Mi ubicación', 'My location') : A().CITIES[S.site.city] ? A().CITIES[S.site.city].name : '';
-    const hud = $('hud'); if (hud) hud.innerHTML = `<b>${city}</b><span>${hh(HOME.hour)} · ${$('hMonth') ? $('hMonth').selectedOptions[0].text : ''}</span><span class="big">${Pac >= 1000 ? fx(Pac / 1000, 2) + ' MW' : fx(Pac, 2) + ' kW'}</span><span>${L('producción típica a esta hora', 'typical output at this hour')}</span><span>${sp.el > 0 ? L(`Sol a ${fx(sp.el, 0)}° de altura`, `Sun ${fx(sp.el, 0)}° high`) : L('Noche', 'Night')} · ${L('nubosidad típica', 'typical cloudiness')} ${fx(cloud * 100, 0)} %</span>`;
+    const hud = $('hud'); if (hud) hud.innerHTML = `<b>${city}</b><span>${hh(HOME.hour)} · ${HOME.day} ${$('hMonth') ? $('hMonth').selectedOptions[0].text.toLowerCase() : ''}</span><span class="big">${Pac >= 1000 ? fx(Pac / 1000, 2) + ' MW' : fx(Pac, 2) + ' kW'}</span><span>${L('producción a esta hora', 'output at this hour')}</span><span>${sp.el > 0 ? L(`Sol a ${fx(sp.el, 0)}° de altura`, `Sun ${fx(sp.el, 0)}° high`) : L('Noche', 'Night')} · ${L('nubosidad', 'cloudiness')} ${fx(cloud * 100, 0)} %</span>`;
   }
 
   /* ---------- Llevar el diseño al simulador detallado ---------- */
