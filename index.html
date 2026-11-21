@@ -15,6 +15,12 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-feature-settings:'cv11','ss01'}
 header{background:var(--navy);color:#f3efe6;padding:18px 24px 16px;border-bottom:3px solid var(--gold)}
+header{position:relative}
+.lang{position:absolute;top:16px;right:20px;display:inline-flex;border:1px solid rgba(255,255,255,.35);border-radius:6px;overflow:hidden}
+.lang button{background:transparent;color:#e7e1d3;border:0;border-radius:0;padding:6px 12px;font:600 13px var(--sans);letter-spacing:.5px}
+.lang button:hover{background:rgba(255,255,255,.1)}
+.lang button.on{background:var(--gold);color:#fff}
+@media(max-width:600px){header{padding-right:110px}.lang{top:14px;right:12px}}
 header h1{font:700 26px/1.2 var(--serif);margin:0;letter-spacing:-.3px}
 header p{margin:6px 0 0;color:#d6d0c2;font-size:14px}
 main{max-width:1500px;margin:0 auto;padding:16px;display:grid;gap:16px;grid-template-columns:230px minmax(0,1fr) 320px}
@@ -83,68 +89,69 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:10px 0 24px}
 </head>
 <body>
 <header>
-  <h1>Sistema Fotovoltaico Seminario</h1>
-  <p>Modelo de un diodo · Celda (U1) → Módulo (U2) → String → Arreglo + batería, controlador y carga · Seminario de Investigación, Ingeniería Eléctrica UNAH</p>
+  <div class="lang" role="group" aria-label="Idioma / Language"><button type="button" data-lang="es">ES</button><button type="button" data-lang="en">EN</button></div>
+  <h1 data-en="Photovoltaic System Simulator">Sistema Fotovoltaico Seminario</h1>
+  <p data-en="Single-diode model · Cell (U1) → Module (U2) → String → Array + battery, charge controller and load · Research Seminar, Electrical Engineering, UNAH">Modelo de un diodo · Celda (U1) → Módulo (U2) → String → Arreglo + batería, controlador y carga · Seminario de Investigación, Ingeniería Eléctrica UNAH</p>
 </header>
 
 <main>
   <aside class="card">
-    <h2>Jerarquía</h2>
+    <h2 data-en="Hierarchy">Jerarquía</h2>
     <ul class="tree" id="tree"></ul>
   </aside>
 
   <section class="card">
-    <h2>Esquema del sistema</h2>
+    <h2 data-en="System schematic">Esquema del sistema</h2>
     <div class="toolbar">
       <div class="seg">
-        <input type="radio" name="mode" id="mSel" value="select" checked><label for="mSel">Seleccionar</label>
-        <input type="radio" name="mode" id="mPaint" value="paint"><label for="mPaint">Pintar sombra</label>
+        <input type="radio" name="mode" id="mSel" value="select" checked><label data-en="Select" for="mSel">Seleccionar</label>
+        <input type="radio" name="mode" id="mPaint" value="paint"><label data-en="Paint shade" for="mPaint">Pintar sombra</label>
       </div>
       <span id="brushBox" style="display:none;align-items:center;gap:6px">G = <input type="range" id="brush" min="0" max="1000" step="50" value="300" style="width:110px"> <b id="brushV" style="font-family:var(--mono)">300</b> W/m²</span>
-      <button data-preset="clear">Sin sombra</button>
-      <button data-preset="one">Sombra en 1 celda</button>
-      <button data-preset="edge">Sombra lateral</button>
-      <button data-preset="rand">Sombra aleatoria</button>
-      <button data-preset="bpOn">Bypass: todos</button>
-      <button data-preset="bpOff">Bypass: ninguno</button>
-      <button id="btnNet">Netlist LTspice</button>
+      <button data-en="No shade" data-preset="clear">Sin sombra</button>
+      <button data-en="Shade 1 cell" data-preset="one">Sombra en 1 celda</button>
+      <button data-en="Edge shade" data-preset="edge">Sombra lateral</button>
+      <button data-en="Random shade" data-preset="rand">Sombra aleatoria</button>
+      <button data-en="Bypass: all" data-preset="bpOn">Bypass: todos</button>
+      <button data-en="Bypass: none" data-preset="bpOff">Bypass: ninguno</button>
+      <button data-en="LTspice netlist" id="btnNet">Netlist LTspice</button>
     </div>
     <div class="sizebar" id="sizebar"></div>
     <div id="schWrap"><svg id="sch"></svg></div>
     <div class="blocks">
-      <div class="blk" data-sel="ctl"><b>Controlador de carga</b><span id="bCtl"></span></div>
-      <div class="blk" data-sel="bat"><b>Banco de baterías</b><span id="bBat"></span></div>
-      <div class="blk" data-sel="load"><b>Carga</b><span id="bLoad"></span></div>
+      <div class="blk" data-sel="ctl"><b data-en="Charge controller">Controlador de carga</b><span id="bCtl"></span></div>
+      <div class="blk" data-sel="bat"><b data-en="Battery bank">Banco de baterías</b><span id="bBat"></span></div>
+      <div class="blk" data-sel="load"><b data-en="Load">Carga</b><span id="bLoad"></span></div>
     </div>
-    <p class="note">Usa los botones − / + para agregar o quitar filas y columnas de celdas en cada módulo, módulos por string y strings. Toca una celda para editarla por separado, o usa «Pintar sombra» y arrastra sobre las celdas. Las insignias D1…Dn de cada módulo activan o desactivan su diodo bypass.</p>
+    <p data-en="Use the − / + buttons to add or remove rows and columns of cells in each module, modules per string and strings. Tap a cell to edit it individually, or use “Paint shade” and drag over the cells. The D1…Dn badges on each module turn its bypass diode on or off." class="note">Usa los botones − / + para agregar o quitar filas y columnas de celdas en cada módulo, módulos por string y strings. Toca una celda para editarla por separado, o usa «Pintar sombra» y arrastra sobre las celdas. Las insignias D1…Dn de cada módulo activan o desactivan su diodo bypass.</p>
   </section>
 
   <aside class="card" id="insp"></aside>
 
   <section class="results">
     <div class="card">
-      <h2>Resultados (condición actual)</h2>
+      <h2 data-en="Results (current condition)">Resultados (condición actual)</h2>
       <div class="metrics" id="metrics"></div>
-      <h3>Punto de operación con batería</h3>
+      <h3 data-en="Operating point with battery">Punto de operación con batería</h3>
       <div class="kv" id="op"></div>
     </div>
     <div class="card">
-      <h2>Curvas I‑V y P‑V del arreglo</h2>
+      <h2 data-en="Array I‑V and P‑V curves">Curvas I‑V y P‑V del arreglo</h2>
       <canvas id="cIV" style="height:320px"></canvas>
-      <div class="legend"><span><i style="background:var(--navy)"></i>Corriente I (A)</span><span><i style="background:var(--wine)"></i>Potencia P (W)</span><span><i style="background:var(--gold)"></i>MPP / punto de operación</span><span><i style="background:#9aa3b5"></i>Strings individuales</span></div>
+      <div class="legend"><span data-en="&lt;i style=&quot;background:var(--navy)&quot;&gt;&lt;/i&gt;Current I (A)"><i style="background:var(--navy)"></i>Corriente I (A)</span><span data-en="&lt;i style=&quot;background:var(--wine)&quot;&gt;&lt;/i&gt;Power P (W)"><i style="background:var(--wine)"></i>Potencia P (W)</span><span data-en="&lt;i style=&quot;background:var(--gold)&quot;&gt;&lt;/i&gt;MPP / operating point"><i style="background:var(--gold)"></i>MPP / punto de operación</span><span data-en="&lt;i style=&quot;background:#9aa3b5&quot;&gt;&lt;/i&gt;Individual strings"><i style="background:#9aa3b5"></i>Strings individuales</span></div>
     </div>
   </section>
 
   <section class="card site">
     <div>
-      <h2>Sitio y posición del sol</h2>
-      <div class="field"><label>Ubicación</label><select id="city"></select></div>
+      <h2 data-en="Site and sun position">Sitio y posición del sol</h2>
+      <div class="field"><label data-en="Location">Ubicación</label><select id="city"></select></div>
       <div id="locF"></div>
-      <p class="note">Posición solar con declinación, ecuación del tiempo y ángulo horario. Irradiancia de cielo despejado (Meinel) sobre el plano inclinado, multiplicada por el índice de claridad. Temperatura ambiente con ciclo diario entre mínima (madrugada) y máxima (15:00).</p>
+      <p data-en="Solar position from declination, equation of time and hour angle. Clear-sky irradiance (Meinel) on the tilted plane, multiplied by the clearness index. Ambient temperature follows a daily cycle between the minimum (early morning) and the maximum (15:00)." class="note">Posición solar con declinación, ecuación del tiempo y ángulo horario. Irradiancia de cielo despejado (Meinel) sobre el plano inclinado, multiplicada por el índice de claridad. Temperatura ambiente con ciclo diario entre mínima (madrugada) y máxima (15:00).</p>
     </div>
     <div>
       <svg id="scene" viewBox="0 0 640 280"></svg>
-      <div class="player"><button class="pri" id="play">▶ Animar día</button><input type="range" id="hour" min="0" max="24" step="0.05" value="12"><b id="hourV" style="font-family:var(--mono);min-width:48px">12:00</b></div>
+      <div class="player"><button class="pri" id="play" data-en="▶ Animate day">▶ Animar día</button><input type="range" id="hour" min="0" max="24" step="0.05" value="12"><b id="hourV" style="font-family:var(--mono);min-width:48px">12:00</b></div>
       <div class="readout" id="sunR"></div>
     </div>
   </section>
@@ -152,21 +159,21 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:10px 0 24px}
   <section class="card day">
     <div class="toolbar" style="justify-content:space-between">
       <h2 style="margin:0" id="dayT">Simulación de un día (24 h, paso 15 min)</h2>
-      <button class="pri" id="btnDay">Simular día</button>
+      <button data-en="Simulate day" class="pri" id="btnDay">Simular día</button>
     </div>
-    <p class="note">Irradiancia del sitio seleccionado aplicada sobre el patrón de sombra actual, temperatura de celda por NOCT y perfil de consumo residencial. Muestra potencia FV entregada, carga atendida y estado de carga (SOC) del banco.</p>
+    <p data-en="Irradiance of the selected site applied to the current shading pattern, cell temperature from NOCT and a residential load profile. Shows delivered PV power, load served and the battery state of charge (SOC)." class="note">Irradiancia del sitio seleccionado aplicada sobre el patrón de sombra actual, temperatura de celda por NOCT y perfil de consumo residencial. Muestra potencia FV entregada, carga atendida y estado de carga (SOC) del banco.</p>
     <canvas id="cDay" style="height:280px"></canvas>
-    <div class="legend"><span><i style="background:var(--navy)"></i>P FV entregada (W)</span><span><i style="background:var(--wine)"></i>Carga atendida (W)</span><span><i style="background:var(--green)"></i>SOC (%)</span></div>
+    <div class="legend"><span data-en="&lt;i style=&quot;background:var(--navy)&quot;&gt;&lt;/i&gt;Delivered PV power (W)"><i style="background:var(--navy)"></i>P FV entregada (W)</span><span data-en="&lt;i style=&quot;background:var(--wine)&quot;&gt;&lt;/i&gt;Load served (W)"><i style="background:var(--wine)"></i>Carga atendida (W)</span><span><i style="background:var(--green)"></i>SOC (%)</span></div>
     <div class="metrics" id="dayM" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px"></div>
   </section>
 </main>
-<footer>Modelo: I = I<sub>ph</sub> − I<sub>0</sub>[exp((V+IR<sub>s</sub>)/(nV<sub>t</sub>)) − 1] − (V+IR<sub>s</sub>)/R<sub>sh</sub>, con dependencia de I<sub>ph</sub> e I<sub>0</sub> con G y T.</footer>
+<footer data-en="Model: I = I&lt;sub&gt;ph&lt;/sub&gt; − I&lt;sub&gt;0&lt;/sub&gt;[exp((V+IR&lt;sub&gt;s&lt;/sub&gt;)/(nV&lt;sub&gt;t&lt;/sub&gt;)) − 1] − (V+IR&lt;sub&gt;s&lt;/sub&gt;)/R&lt;sub&gt;sh&lt;/sub&gt;, with I&lt;sub&gt;ph&lt;/sub&gt; and I&lt;sub&gt;0&lt;/sub&gt; depending on G and T.">Modelo: I = I<sub>ph</sub> − I<sub>0</sub>[exp((V+IR<sub>s</sub>)/(nV<sub>t</sub>)) − 1] − (V+IR<sub>s</sub>)/R<sub>sh</sub>, con dependencia de I<sub>ph</sub> e I<sub>0</sub> con G y T.</footer>
 
 <dialog id="dlg">
-  <h2>Netlist LTspice del arreglo</h2>
-  <p class="note">Jerarquía con subcircuito CELDA (U1) parametrizado por G y T, cada celda con su propia irradiancia. Pégalo en un archivo .cir y ejecútalo en LTspice.</p>
+  <h2 data-en="Array LTspice netlist">Netlist LTspice del arreglo</h2>
+  <p data-en="Hierarchy with a CELDA (U1) subcircuit parameterized by G and T, each cell with its own irradiance. Paste it into a .cir file and run it in LTspice." class="note">Jerarquía con subcircuito CELDA (U1) parametrizado por G y T, cada celda con su propia irradiancia. Pégalo en un archivo .cir y ejecútalo en LTspice.</p>
   <textarea id="netTxt" readonly></textarea>
-  <div class="toolbar" style="margin:10px 0 0;justify-content:flex-end"><span id="cpMsg" class="note"></span><button id="btnCopy">Copiar</button><button class="pri" id="btnClose">Cerrar</button></div>
+  <div class="toolbar" style="margin:10px 0 0;justify-content:flex-end"><span id="cpMsg" class="note"></span><button data-en="Copy" id="btnCopy">Copiar</button><button data-en="Close" class="pri" id="btnClose">Cerrar</button></div>
 </dialog>
 
 <script>
@@ -185,6 +192,8 @@ const S={
 };
 const LOADPROF=[.3,.25,.25,.25,.3,.5,.8,.7,.5,.4,.4,.5,.6,.5,.4,.4,.5,.8,1,1,.9,.7,.5,.4];
 const $=id=>document.getElementById(id);
+let LANG='es';
+const L=(es,en)=>LANG==='en'?en:es;
 const fix=(x,d=2)=>isFinite(x)?x.toFixed(d):'—';
 
 function rs(a,n,v){a=a||[];a.length=Math.min(a.length,n);while(a.length<n)a.push(v);return a}
@@ -263,12 +272,12 @@ function operate(cv,met,soc,Pl){
   if(S.ctl.mode==='mppt'){
     Ppv=met.Pmp*S.ctl.eta;Vop=met.Vmp;Ipv=met.Imp;
     let Pb=Ppv-load;
-    if(soc>=S.ctl.socMax&&Pb>0){Pb=0;Ppv=load;note='Batería llena: FV limitada'}
-    if(soc<=S.ctl.lvd&&Pb<0){load=0;Pb=Ppv;note='LVD: carga desconectada'}
+    if(soc>=S.ctl.socMax&&Pb>0){Pb=0;Ppv=load;note=L('Batería llena: FV limitada','Battery full: PV curtailed')}
+    if(soc<=S.ctl.lvd&&Pb<0){load=0;Pb=Ppv;note=L('LVD: carga desconectada','LVD: load disconnected')}
     Ib=ibFromP(Pb,E);
   }else{
-    let pvOn=!(soc>=S.ctl.socMax);if(!pvOn)note='Batería llena: FV desconectada';
-    if(soc<=S.ctl.lvd){load=0;note='LVD: carga desconectada'}
+    let pvOn=!(soc>=S.ctl.socMax);if(!pvOn)note=L('Batería llena: FV desconectada','Battery full: PV disconnected');
+    if(soc<=S.ctl.lvd){load=0;note=L('LVD: carga desconectada','LVD: load disconnected')}
     if(!pvOn||!cv){Ib=ibFromP(-load,E);Vop=E+R*Ib;Ipv=0;Ppv=0}
     else{
       const f=v=>ipvAt(cv,v)-load/v-(v-E)/R;
@@ -368,38 +377,38 @@ function renderInsp(){
   if(q.type==='cell'){
     const G=S.G[q.s][q.m][q.c],T=S.T[q.s][q.m][q.c],p=cellPar(G,T);
     const voc=cellV(p,0),isc=Math.max(0,p.iph/(1+S.cell.Rs/S.cell.Rsh));
-    h=`<h2>Celda U1 · ${q.s+1}.${q.m+1}.${q.c+1}</h2><p class="note">Pertenece al grupo de bypass D${groupOf(q.c)+1} del módulo ${q.s+1}.${q.m+1}.</p>
-    <h3>Condición de esta celda</h3>
-    <div class="field"><label>Irradiancia G <span class="note">(W/m²)</span></label><input type="number" id="cG" value="${G}" min="0" max="1200" step="10"></div>
+    h=`<h2>${L('Celda','Cell')} U1 · ${q.s+1}.${q.m+1}.${q.c+1}</h2><p class="note">${L(`Pertenece al grupo de bypass D${groupOf(q.c)+1} del módulo ${q.s+1}.${q.m+1}.`,`Belongs to bypass group D${groupOf(q.c)+1} of module ${q.s+1}.${q.m+1}.`)}</p>
+    <h3>${L('Condición de esta celda','This cell’s condition')}</h3>
+    <div class="field"><label>${L('Irradiancia','Irradiance')} G <span class="note">(W/m²)</span></label><input type="number" id="cG" value="${G}" min="0" max="1200" step="10"></div>
     <input type="range" id="cGr" min="0" max="1200" step="10" value="${G}">
-    <div class="field"><label>Temperatura T <span class="note">(°C)</span></label><input type="number" id="cT" value="${T}" min="-10" max="90" step="1"></div>
-    <div class="toolbar"><button id="cAllMod">Aplicar al módulo</button><button id="cAll">Aplicar a todas</button></div>
-    <div class="kv"><span>I<sub>ph</sub></span><span>${fix(p.iph,3)} A</span><span>I<sub>0</sub></span><span>${p.i0.toExponential(3)} A</span><span>V<sub>oc</sub> celda</span><span>${fix(voc,3)} V</span><span>I<sub>sc</sub> celda</span><span>${fix(isc,3)} A</span></div>
-    <h3>Parámetros comunes de la celda (STC)</h3>
-    ${F('I<sub>sc</sub>','cell.Isc',0.1,20,0.01,'A')}${F('V<sub>oc</sub>','cell.Voc',0.3,0.9,0.001,'V')}${F('Factor ideal n','cell.n',1,2,0.01)}${F('R<sub>s</sub>','cell.Rs',0,0.1,0.001,'Ω')}${F('R<sub>sh</sub>','cell.Rsh',0.5,1000,0.5,'Ω')}${F('K<sub>i</sub>','cell.Ki',0,0.01,0.0001,'A/°C')}${F('E<sub>g</sub>','cell.Eg',0.5,2,0.01,'eV')}`;
+    <div class="field"><label>${L('Temperatura','Temperature')} T <span class="note">(°C)</span></label><input type="number" id="cT" value="${T}" min="-10" max="90" step="1"></div>
+    <div class="toolbar"><button id="cAllMod">${L('Aplicar al módulo','Apply to module')}</button><button id="cAll">${L('Aplicar a todas','Apply to all')}</button></div>
+    <div class="kv"><span>I<sub>ph</sub></span><span>${fix(p.iph,3)} A</span><span>I<sub>0</sub></span><span>${p.i0.toExponential(3)} A</span><span>${L('V<sub>oc</sub> celda','Cell V<sub>oc</sub>')}</span><span>${fix(voc,3)} V</span><span>${L('I<sub>sc</sub> celda','Cell I<sub>sc</sub>')}</span><span>${fix(isc,3)} A</span></div>
+    <h3>${L('Parámetros comunes de la celda (STC)','Common cell parameters (STC)')}</h3>
+    ${F('I<sub>sc</sub>','cell.Isc',0.1,20,0.01,'A')}${F('V<sub>oc</sub>','cell.Voc',0.3,0.9,0.001,'V')}${F(L('Factor ideal n','Ideality factor n'),'cell.n',1,2,0.01)}${F('R<sub>s</sub>','cell.Rs',0,0.1,0.001,'Ω')}${F('R<sub>sh</sub>','cell.Rsh',0.5,1000,0.5,'Ω')}${F('K<sub>i</sub>','cell.Ki',0,0.01,0.0001,'A/°C')}${F('E<sub>g</sub>','cell.Eg',0.5,2,0.01,'eV')}`;
   }else if(q.type==='mod'){
     const sh=S.G[q.s][q.m].filter(g=>g<1000).length;
-    h=`<h2>Módulo U2 · ${q.s+1}.${q.m+1}</h2>
-    <div class="kv"><span>Celdas en serie</span><span>${S.mod.rows*S.mod.cols}</span><span>Celdas con sombra</span><span>${sh}</span><span>Bypass activos</span><span>${S.bp[q.s][q.m].filter(x=>x).length}/${S.mod.groups}</span></div>
-    <h3>Diodos bypass de este módulo</h3><div class="toolbar">${S.bp[q.s][q.m].map((on,g)=>`<button data-bpg="${g}" class="${on?'pri':''}">D${g+1} ${on?'activo':'inactivo'}</button>`).join('')}</div>
-    <div class="toolbar"><button id="mClear">Quitar sombra del módulo</button><button id="mHalf">Sombra 50 % al módulo</button></div>
-    <h3>Topología común de módulos</h3>
-    ${F('Filas de celdas','mod.rows',1,LIM.rows,1)}${F('Columnas de celdas','mod.cols',1,LIM.cols,1)}${F('Grupos de bypass','mod.groups',1,6,1)}${F('V directa bypass','arr.Vbp',0.2,1.2,0.05,'V')}`;
+    h=`<h2>${L('Módulo','Module')} U2 · ${q.s+1}.${q.m+1}</h2>
+    <div class="kv"><span>${L('Celdas en serie','Cells in series')}</span><span>${S.mod.rows*S.mod.cols}</span><span>${L('Celdas con sombra','Shaded cells')}</span><span>${sh}</span><span>${L('Bypass activos','Active bypass')}</span><span>${S.bp[q.s][q.m].filter(x=>x).length}/${S.mod.groups}</span></div>
+    <h3>${L('Diodos bypass de este módulo','Bypass diodes of this module')}</h3><div class="toolbar">${S.bp[q.s][q.m].map((on,g)=>`<button data-bpg="${g}" class="${on?'pri':''}">D${g+1} ${on?L('activo','on'):L('inactivo','off')}</button>`).join('')}</div>
+    <div class="toolbar"><button id="mClear">${L('Quitar sombra del módulo','Clear module shade')}</button><button id="mHalf">${L('Sombra 50 % al módulo','50 % shade on module')}</button></div>
+    <h3>${L('Topología común de módulos','Common module topology')}</h3>
+    ${F(L('Filas de celdas','Cell rows'),'mod.rows',1,LIM.rows,1)}${F(L('Columnas de celdas','Cell columns'),'mod.cols',1,LIM.cols,1)}${F(L('Grupos de bypass','Bypass groups'),'mod.groups',1,6,1)}${F(L('V directa bypass','Bypass forward V'),'arr.Vbp',0.2,1.2,0.05,'V')}`;
   }else if(q.type==='str'||q.type==='arr'){
-    h=`<h2>Arreglo fotovoltaico</h2>${q.type==='str'?`<p class="note">String ${q.s+1}: ${S.arr.Ns} módulos en serie.</p>`:''}
-    ${F('Módulos en serie por string','arr.Ns',1,LIM.Ns,1)}${F('Strings en paralelo','arr.Np',1,LIM.Np,1)}
-    ${Sel('Diodo de bloqueo','arr.block',[['true','Sí'],['false','No']])}${F('V directa bloqueo','arr.Vd',0,1.2,0.05,'V')}
-    <h3>Térmico</h3>${F('NOCT','day.NOCT',35,55,1,'°C')}`;
+    h=`<h2>${L('Arreglo fotovoltaico','PV array')}</h2>${q.type==='str'?`<p class="note">String ${q.s+1}: ${S.arr.Ns} ${L('módulos en serie','modules in series')}.</p>`:''}
+    ${F(L('Módulos en serie por string','Modules in series per string'),'arr.Ns',1,LIM.Ns,1)}${F(L('Strings en paralelo','Parallel strings'),'arr.Np',1,LIM.Np,1)}
+    ${Sel(L('Diodo de bloqueo','Blocking diode'),'arr.block',[['true',L('Sí','Yes')],['false','No']])}${F(L('V directa bloqueo','Blocking forward V'),'arr.Vd',0,1.2,0.05,'V')}
+    <h3>${L('Térmico','Thermal')}</h3>${F('NOCT','day.NOCT',35,55,1,'°C')}`;
   }else if(q.type==='bat'){
-    h=`<h2>Banco de baterías</h2><p class="note">Baterías de 12 V nominales (plomo‑ácido). V<sub>oc</sub> = 11.8 + 1.0·SOC por batería.</p>
-    ${F('Baterías en serie','bat.ns',1,8,1)}${F('Ramas en paralelo','bat.np',1,8,1)}${F('Capacidad por batería','bat.C',10,1000,5,'Ah')}${F('R interna por batería','bat.Rint',0.001,0.5,0.001,'Ω')}${F('SOC inicial','bat.SOC0',0,1,0.05,'0–1')}
-    <div class="kv"><span>Tensión nominal</span><span>${12*S.bat.ns} V</span><span>Capacidad banco</span><span>${S.bat.C*S.bat.np} Ah</span><span>Energía</span><span>${fix(12*S.bat.ns*S.bat.C*S.bat.np/1000,2)} kWh</span></div>`;
+    h=`<h2>${L('Banco de baterías','Battery bank')}</h2><p class="note">${L('Baterías de 12 V nominales (plomo‑ácido). V<sub>oc</sub> = 11.8 + 1.0·SOC por batería.','12 V nominal lead‑acid batteries. V<sub>oc</sub> = 11.8 + 1.0·SOC per battery.')}</p>
+    ${F(L('Baterías en serie','Batteries in series'),'bat.ns',1,8,1)}${F(L('Ramas en paralelo','Parallel branches'),'bat.np',1,8,1)}${F(L('Capacidad por batería','Capacity per battery'),'bat.C',10,1000,5,'Ah')}${F(L('R interna por batería','Internal R per battery'),'bat.Rint',0.001,0.5,0.001,'Ω')}${F(L('SOC inicial','Initial SOC'),'bat.SOC0',0,1,0.05,'0–1')}
+    <div class="kv"><span>${L('Tensión nominal','Nominal voltage')}</span><span>${12*S.bat.ns} V</span><span>${L('Capacidad banco','Bank capacity')}</span><span>${S.bat.C*S.bat.np} Ah</span><span>${L('Energía','Energy')}</span><span>${fix(12*S.bat.ns*S.bat.C*S.bat.np/1000,2)} kWh</span></div>`;
   }else if(q.type==='ctl'){
-    h=`<h2>Controlador de carga</h2>${Sel('Modo','ctl.mode',[['mppt','MPPT'],['direct','Acople directo (PWM)']])}
-    ${F('Eficiencia (MPPT)','ctl.eta',0.5,1,0.01)}${F('SOC de corte de carga','ctl.socMax',0.5,1,0.01)}${F('SOC de desconexión (LVD)','ctl.lvd',0,0.6,0.01)}
-    <p class="note">MPPT: opera el arreglo en su punto de máxima potencia. Acople directo: el arreglo trabaja a la tensión de la batería.</p>`;
+    h=`<h2>${L('Controlador de carga','Charge controller')}</h2>${Sel(L('Modo','Mode'),'ctl.mode',[['mppt','MPPT'],['direct',L('Acople directo (PWM)','Direct coupling (PWM)')]])}
+    ${F(L('Eficiencia (MPPT)','Efficiency (MPPT)'),'ctl.eta',0.5,1,0.01)}${F(L('SOC de corte de carga','Charge cutoff SOC'),'ctl.socMax',0.5,1,0.01)}${F(L('SOC de desconexión (LVD)','Disconnect SOC (LVD)'),'ctl.lvd',0,0.6,0.01)}
+    <p class="note">${L('MPPT: opera el arreglo en su punto de máxima potencia. Acople directo: el arreglo trabaja a la tensión de la batería.','MPPT: runs the array at its maximum power point. Direct coupling: the array operates at the battery voltage.')}</p>`;
   }else if(q.type==='load'){
-    h=`<h2>Carga</h2>${F('Potencia pico demandada','load.P',0,5000,10,'W')}<p class="note">En la simulación diaria se aplica un perfil residencial horario (máximo entre 18:00 y 20:00). En el punto de operación actual se usa la potencia pico.</p>`;
+    h=`<h2>${L('Carga','Load')}</h2>${F(L('Potencia pico demandada','Peak power demand'),'load.P',0,5000,10,'W')}<p class="note">${L('En la simulación diaria se aplica un perfil residencial horario (máximo entre 18:00 y 20:00). En el punto de operación actual se usa la potencia pico.','The daily simulation applies an hourly residential profile (peak between 18:00 and 20:00). The current operating point uses the peak power.')}</p>`;
   }
   $('insp').innerHTML=h;
   $('insp').querySelectorAll('[data-p]').forEach(el=>el.addEventListener('change',()=>{
@@ -426,16 +435,16 @@ const eachMod=f=>{for(let s=0;s<S.arr.Np;s++)for(let m=0;m<S.arr.Ns;m++)f(s,m)};
 
 function renderTree(){
   const q=S.sel,on=(t,s,m)=>q.type===t&&(s==null||q.s===s)&&(m==null||q.m===m)?'on':'';
-  let h=`<li class="${on('arr')}" data-sel="arr"><span class="tag">PV</span>Arreglo ${S.arr.Ns}S×${S.arr.Np}P</li>`;
+  let h=`<li class="${on('arr')}" data-sel="arr"><span class="tag">PV</span>${L('Arreglo','Array')} ${S.arr.Ns}S×${S.arr.Np}P</li>`;
   for(let s=0;s<S.arr.Np;s++){h+=`<li class="${on('str',s)}" data-sel="str" data-s="${s}" style="padding-left:16px"><span class="tag">S${s+1}</span>String ${s+1}</li>`;
-    for(let m=0;m<S.arr.Ns;m++){const sh=S.G[s][m].some(g=>g<1000);h+=`<li class="${on('mod',s,m)}" data-sel="mod" data-s="${s}" data-m="${m}" style="padding-left:30px"><span class="tag">U2</span>Módulo ${s+1}.${m+1}${sh?' · sombra':''}</li>`}}
-  h+=`<li class="${on('ctl')}" data-sel="ctl"><span class="tag">CC</span>Controlador</li><li class="${on('bat')}" data-sel="bat"><span class="tag">BAT</span>Baterías</li><li class="${on('load')}" data-sel="load"><span class="tag">LD</span>Carga</li>`;
+    for(let m=0;m<S.arr.Ns;m++){const sh=S.G[s][m].some(g=>g<1000);h+=`<li class="${on('mod',s,m)}" data-sel="mod" data-s="${s}" data-m="${m}" style="padding-left:30px"><span class="tag">U2</span>${L('Módulo','Module')} ${s+1}.${m+1}${sh?L(' · sombra',' · shaded'):''}</li>`}}
+  h+=`<li class="${on('ctl')}" data-sel="ctl"><span class="tag">CC</span>${L('Controlador','Controller')}</li><li class="${on('bat')}" data-sel="bat"><span class="tag">BAT</span>${L('Baterías','Batteries')}</li><li class="${on('load')}" data-sel="load"><span class="tag">LD</span>${L('Carga','Load')}</li>`;
   $('tree').innerHTML=h;
   $('tree').querySelectorAll('li').forEach(li=>li.onclick=()=>{S.sel={type:li.dataset.sel,s:+(li.dataset.s||0),m:+(li.dataset.m||0),c:0};renderAll()});
   document.querySelectorAll('.blk').forEach(b=>b.classList.toggle('on',q.type===b.dataset.sel));
-  $('bCtl').textContent=S.ctl.mode==='mppt'?`MPPT · η ${Math.round(S.ctl.eta*100)} %`:'Acople directo';
+  $('bCtl').textContent=S.ctl.mode==='mppt'?`MPPT · η ${Math.round(S.ctl.eta*100)} %`:L('Acople directo','Direct coupling');
   $('bBat').textContent=`${S.bat.ns}S×${S.bat.np}P · ${12*S.bat.ns} V · ${S.bat.C*S.bat.np} Ah`;
-  $('bLoad').textContent=`${S.load.P} W pico`;
+  $('bLoad').textContent=`${S.load.P} W ${L('pico','peak')}`;
 }
 
 /* ---------- cálculo y resultados ---------- */
@@ -444,18 +453,18 @@ function schedule(f){full=full||f;if(!raf)raf=requestAnimationFrame(()=>{raf=0;c
 function compute(){
   const cv=curves(),mt=metrics(cv),op=operate(cv,mt,S.bat.SOC0,S.load.P);
   const M=(l,v,w)=>`<div class="m${w?' warn':''}"><small>${l}</small><b>${v}</b></div>`;
-  $('metrics').innerHTML=M('P<sub>mp</sub>',fix(mt.Pmp,1)+' W')+M('Factor de forma',fix(mt.FF*100,1)+' %')+M('V<sub>oc</sub>',fix(mt.Voc,2)+' V')+M('I<sub>sc</sub>',fix(mt.Isc,2)+' A')+M('V<sub>mp</sub>',fix(mt.Vmp,2)+' V')+M('I<sub>mp</sub>',fix(mt.Imp,2)+' A')+M('Máximos locales',mt.peaks,mt.peaks>1)+M('Celdas',S.mod.rows*S.mod.cols*S.arr.Ns*S.arr.Np);
-  $('op').innerHTML=`<span>Modo</span><span>${S.ctl.mode==='mppt'?'MPPT':'Directo'}</span><span>V arreglo</span><span>${fix(op.Vop,2)} V</span><span>P FV aprovechada</span><span>${fix(op.Ppv,1)} W</span><span>V<sub>oc</sub> batería (SOC ${Math.round(S.bat.SOC0*100)} %)</span><span>${fix(op.E,2)} V</span><span>I batería (+carga)</span><span>${fix(op.Ib,2)} A</span><span>V terminal batería</span><span>${fix(op.Vb,2)} V</span><span>Carga atendida</span><span>${fix(op.load,0)} W</span>${op.note?`<span style="grid-column:1/-1;color:var(--wine)">${op.note}</span>`:''}${S.ctl.mode==='direct'&&mt.Pmp>0?`<span>Pérdida vs MPP</span><span>${fix((1-op.Ppv/mt.Pmp)*100,1)} %</span>`:''}`;
+  $('metrics').innerHTML=M('P<sub>mp</sub>',fix(mt.Pmp,1)+' W')+M(L('Factor de forma','Fill factor'),fix(mt.FF*100,1)+' %')+M('V<sub>oc</sub>',fix(mt.Voc,2)+' V')+M('I<sub>sc</sub>',fix(mt.Isc,2)+' A')+M('V<sub>mp</sub>',fix(mt.Vmp,2)+' V')+M('I<sub>mp</sub>',fix(mt.Imp,2)+' A')+M(L('Máximos locales','Local maxima'),mt.peaks,mt.peaks>1)+M(L('Celdas','Cells'),S.mod.rows*S.mod.cols*S.arr.Ns*S.arr.Np);
+  $('op').innerHTML=`<span>${L('Modo','Mode')}</span><span>${S.ctl.mode==='mppt'?'MPPT':L('Directo','Direct')}</span><span>${L('V arreglo','Array V')}</span><span>${fix(op.Vop,2)} V</span><span>${L('P FV aprovechada','PV power used')}</span><span>${fix(op.Ppv,1)} W</span><span>${L('V<sub>oc</sub> batería','Battery V<sub>oc</sub>')} (SOC ${Math.round(S.bat.SOC0*100)} %)</span><span>${fix(op.E,2)} V</span><span>${L('I batería (+carga)','Battery I (+charge)')}</span><span>${fix(op.Ib,2)} A</span><span>${L('V terminal batería','Battery terminal V')}</span><span>${fix(op.Vb,2)} V</span><span>${L('Carga atendida','Load served')}</span><span>${fix(op.load,0)} W</span>${op.note?`<span style="grid-column:1/-1;color:var(--wine)">${op.note}</span>`:''}${S.ctl.mode==='direct'&&mt.Pmp>0?`<span>${L('Pérdida vs MPP','Loss vs MPP')}</span><span>${fix((1-op.Ppv/mt.Pmp)*100,1)} %</span>`:''}`;
   const c=$('cIV');
   if(!cv){chart(c,{xs:[0,1],series:[],xl:'V (V)',yl:'I (A)',yr:'P (W)'});return}
   const series=[];if(S.arr.Np>1)cv.Istr.forEach(ys=>series.push({ys,color:'#9aa3b5',w:1,dash:[4,3]}));
   series.push({ys:cv.I,color:'#1f2f4f'},{ys:cv.P,color:'#7a2e3a',side:'r'});
   const pts=[{x:mt.Vmp,y:mt.Pmp,side:'r',color:'#a88a52',label:`MPP ${fix(mt.Pmp,1)} W`}];
-  if(S.ctl.mode==='direct'&&op.Ppv>0)pts.push({x:op.Vop,y:op.Ipv,color:'#a88a52',label:`Operación ${fix(op.Vop,1)} V`});
-  chart(c,{xs:cv.V,series,pts,xl:'Tensión del arreglo V (V)',yl:'Corriente I (A)',yr:'Potencia P (W)',ymaxL:Math.max(...cv.I)*1.08,ymaxR:mt.Pmp*1.12});
+  if(S.ctl.mode==='direct'&&op.Ppv>0)pts.push({x:op.Vop,y:op.Ipv,color:'#a88a52',label:`${L('Operación','Operating')} ${fix(op.Vop,1)} V`});
+  chart(c,{xs:cv.V,series,pts,xl:L('Tensión del arreglo V (V)','Array voltage V (V)'),yl:L('Corriente I (A)','Current I (A)'),yr:L('Potencia P (W)','Power P (W)'),ymaxL:Math.max(...cv.I)*1.08,ymaxR:mt.Pmp*1.12});
 }
 /* ---------- sitio y sol ---------- */
-const CITIES={tgu:['Tegucigalpa',14.0723,-87.1921,17,28,990],sps:['San Pedro Sula',15.5042,-88.0250,22,32,60],cho:['Choluteca',13.3007,-87.1908,23,35,50],lce:['La Ceiba',15.7597,-86.7822,22,30,10],cop:['Santa Rosa de Copán',14.7667,-88.7792,15,26,1150],custom:['Personalizado']};
+const CITIES={tgu:['Tegucigalpa',14.0723,-87.1921,17,28,990],sps:['San Pedro Sula',15.5042,-88.0250,22,32,60],cho:['Choluteca',13.3007,-87.1908,23,35,50],lce:['La Ceiba',15.7597,-86.7822,22,30,10],cop:['Santa Rosa de Copán',14.7667,-88.7792,15,26,1150],custom:['Personalizado','Custom']};
 const rad=Math.PI/180;
 function doy(){const d=new Date(S.loc.date+'T12:00:00');return Math.floor((d-new Date(d.getFullYear(),0,0))/864e5)||1}
 function solar(h){
@@ -493,14 +502,14 @@ function simDay(){
   }
   DAY={t,Ppv,Pl,SOC,Gs};drawDay();
   const M=(l,v,w)=>`<div class="m${w?' warn':''}"><small>${l}</small><b>${v}</b></div>`;
-  $('dayM').innerHTML=M('Horas solares pico',fix(Hsol,2)+' h')+M('Energía FV',fix(Epv/1000,2)+' kWh')+M('Energía demandada',fix(Ed/1000,2)+' kWh')+M('Energía atendida',fix(El/1000,2)+' kWh')+M('No atendida',fix((Ed-El)/1000,2)+' kWh',Ed-El>1)+M('SOC final',fix(soc*100,1)+' %')+M('SOC mínimo',fix(Math.min(...SOC),1)+' %');
-  $('dayT').textContent=`Simulación de un día en ${CITIES[S.loc.city][0]==='Personalizado'?'sitio personalizado':CITIES[S.loc.city][0]} · ${S.loc.date}`;
+  $('dayM').innerHTML=M(L('Horas solares pico','Peak sun hours'),fix(Hsol,2)+' h')+M(L('Energía FV','PV energy'),fix(Epv/1000,2)+' kWh')+M(L('Energía demandada','Energy demanded'),fix(Ed/1000,2)+' kWh')+M(L('Energía atendida','Energy served'),fix(El/1000,2)+' kWh')+M(L('No atendida','Unserved'),fix((Ed-El)/1000,2)+' kWh',Ed-El>1)+M(L('SOC final','Final SOC'),fix(soc*100,1)+' %')+M(L('SOC mínimo','Minimum SOC'),fix(Math.min(...SOC),1)+' %');
+  $('dayT').textContent=`${L('Simulación de un día en','One-day simulation in')} ${S.loc.city==='custom'?L('sitio personalizado','custom site'):CITIES[S.loc.city][0]} · ${S.loc.date}`;
   drawScene();
 }
 function drawDay(){
   if(!DAY)return;const mx=Math.max(...DAY.Ppv,...DAY.Pl,1),k=Math.round(curH/0.25);
   chart($('cDay'),{xs:DAY.t,xmax:24,xstep:3,vline:curH,series:[{ys:DAY.Ppv,color:'#1f2f4f'},{ys:DAY.Pl,color:'#7a2e3a'},{ys:DAY.SOC,color:'#3f6b52',side:'r'}],
-    pts:[{x:curH,y:DAY.Ppv[k],color:'#a88a52',label:`${hhmm(curH)} · ${fix(DAY.Ppv[k],0)} W`}],xl:'Hora del día (h)',yl:'Potencia (W)',yr:'SOC (%)',ymaxL:mx*1.1,ymaxR:100});
+    pts:[{x:curH,y:DAY.Ppv[k],color:'#a88a52',label:`${hhmm(curH)} · ${fix(DAY.Ppv[k],0)} W`}],xl:L('Hora del día (h)','Time of day (h)'),yl:L('Potencia (W)','Power (W)'),yr:'SOC (%)',ymaxL:mx*1.1,ymaxR:100});
 }
 function drawScene(){
   const h=curH,{G,sp}=poa(h),W=640,Hh=280,gy=210;
@@ -513,7 +522,7 @@ function drawScene(){
   const tilt=S.loc.tilt,px=W/2,py=gy-6;
   let cells='';for(let i=0;i<6;i++)cells+=`<line x1="${-60+i*20}" y1="-4" x2="${-60+i*20}" y2="4" stroke="#6f86b0" stroke-width=".6"/>`;
   const sunX=X(sp.az),sunY=Y(e),glow=Math.max(0,Math.min(1,e/10));
-  const ticks=[[90,'E'],[135,'SE'],[180,'S'],[225,'SO'],[270,'O']].map(([a,l])=>`<text x="${X(a)}" y="${gy+22}" text-anchor="middle" font-size="11" fill="#5d6270">${l}</text>`).join('');
+  const ticks=[[90,'E'],[135,'SE'],[180,'S'],[225,L('SO','SW')],[270,L('O','W')]].map(([a,l])=>`<text x="${X(a)}" y="${gy+22}" text-anchor="middle" font-size="11" fill="#5d6270">${l}</text>`).join('');
   $('scene').innerHTML=`<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${top}"/><stop offset="1" stop-color="${bot}"/></linearGradient>
   <radialGradient id="glow"><stop offset="0" stop-color="#ffe7a8" stop-opacity=".9"/><stop offset="1" stop-color="#ffe7a8" stop-opacity="0"/></radialGradient></defs>
   <rect width="${W}" height="${gy}" fill="url(#sky)"/>${stars}
@@ -523,34 +532,34 @@ function drawScene(){
   <rect y="${gy}" width="${W}" height="${Hh-gy}" fill="${mix([44,52,46],[176,170,148],day)}"/>${ticks}
   <g transform="translate(${px},${py})"><line x1="0" y1="0" x2="0" y2="-10" stroke="#6b6f78" stroke-width="3"/>
   <g transform="rotate(${-tilt})"><rect x="-62" y="-16" width="124" height="8" fill="#1f2f4f" stroke="#c9c3b4" stroke-width=".8" transform="translate(0,4)"/></g></g>
-  <text x="12" y="20" font-size="12" fill="${day>0.5?'#1d2433':'#e8e2d2'}" font-weight="600">${CITIES[S.loc.city][0]} · ${S.loc.lat.toFixed(2)}°, ${S.loc.lon.toFixed(2)}°</text>
-  <text x="12" y="36" font-size="11" fill="${day>0.5?'#4a4e57':'#c9c3b4'}">Panel: inclinación ${tilt}°, orientación ${S.loc.az}° (${S.loc.az==180?'sur':'az.'})</text>
+  <text x="12" y="20" font-size="12" fill="${day>0.5?'#1d2433':'#e8e2d2'}" font-weight="600">${cityName(S.loc.city)} · ${S.loc.lat.toFixed(2)}°, ${S.loc.lon.toFixed(2)}°</text>
+  <text x="12" y="36" font-size="11" fill="${day>0.5?'#4a4e57':'#c9c3b4'}">${L('Panel: inclinación','Panel: tilt')} ${tilt}°, ${L('orientación','azimuth')} ${S.loc.az}° (${S.loc.az==180?L('sur','south'):'az.'})</text>
   <text x="${W-12}" y="20" text-anchor="end" font-size="20" font-family="JetBrains Mono, monospace" fill="${day>0.5?'#1d2433':'#e8e2d2'}">${hhmm(h)}</text>`;
   const k=Math.round(h/0.25),M=(l,v)=>`<div class="m"><small>${l}</small><b>${v}</b></div>`;
-  $('sunR').innerHTML=M('Elevación',fix(Math.max(e,0),1)+'°')+M('Azimut',fix(sp.az,1)+'°')+M('G plano',fix(G,0)+' W/m²')+M('T ambiente',fix(Tamb(h),1)+' °C')+M('P FV',DAY?fix(DAY.Ppv[k],0)+' W':'—')+M('SOC',DAY?fix(DAY.SOC[k],1)+' %':'—')+M('Salida / puesta',`${hhmm(sp.rise)} / ${hhmm(sp.set)}`)+M('Declinación',fix(sp.dec,2)+'°');
+  $('sunR').innerHTML=M(L('Elevación','Elevation'),fix(Math.max(e,0),1)+'°')+M(L('Azimut','Azimuth'),fix(sp.az,1)+'°')+M(L('G plano','Plane G'),fix(G,0)+' W/m²')+M(L('T ambiente','Ambient T'),fix(Tamb(h),1)+' °C')+M(L('P FV','PV power'),DAY?fix(DAY.Ppv[k],0)+' W':'—')+M('SOC',DAY?fix(DAY.SOC[k],1)+' %':'—')+M(L('Salida / puesta','Sunrise / sunset'),`${hhmm(sp.rise)} / ${hhmm(sp.set)}`)+M(L('Declinación','Declination'),fix(sp.dec,2)+'°');
   $('hourV').textContent=hhmm(h);
 }
 function setHour(h){curH=h;$('hour').value=h;drawScene();drawDay()}
 let anim=0,last=0;
 function playStep(ts){if(!last)last=ts;let h=curH+(ts-last)/1000*2;last=ts;if(h>=24){h=24;stopPlay()}setHour(h);if(anim)anim=requestAnimationFrame(playStep)}
-function stopPlay(){cancelAnimationFrame(anim);anim=0;last=0;$('play').textContent='▶ Animar día'}
+function stopPlay(){cancelAnimationFrame(anim);anim=0;last=0;$('play').textContent=L('▶ Animar día','▶ Animate day')}
 function renderLoc(){
-  $('city').innerHTML=Object.entries(CITIES).map(([k,v])=>`<option value="${k}" ${S.loc.city===k?'selected':''}>${v[0]}</option>`).join('');
-  $('locF').innerHTML=F('Latitud','loc.lat',-60,60,0.0001,'°')+F('Longitud','loc.lon',-180,180,0.0001,'°')+F('Zona horaria UTC','loc.tz',-12,14,1)+F('Altitud','loc.alt',0,4000,10,'m')+
-   `<div class="field"><label>Fecha</label><input type="date" id="locDate" value="${S.loc.date}" style="font:14px var(--mono);border:1px solid var(--line);border-radius:4px;padding:4px 6px"></div>`+
-   F('Inclinación panel','loc.tilt',0,90,1,'°')+F('Orientación (180 = sur)','loc.az',0,359,1,'°')+F('Índice de claridad','loc.kt',0.1,1,0.05)+F('T mínima','loc.Tmin',-10,40,1,'°C')+F('T máxima','loc.Tmax',0,50,1,'°C');
+  $('city').innerHTML=Object.entries(CITIES).map(([k,v])=>`<option value="${k}" ${S.loc.city===k?'selected':''}>${cityName(k)}</option>`).join('');
+  $('locF').innerHTML=F(L('Latitud','Latitude'),'loc.lat',-60,60,0.0001,'°')+F(L('Longitud','Longitude'),'loc.lon',-180,180,0.0001,'°')+F(L('Zona horaria UTC','UTC time zone'),'loc.tz',-12,14,1)+F(L('Altitud','Altitude'),'loc.alt',0,4000,10,'m')+
+   `<div class="field"><label>${L('Fecha','Date')}</label><input type="date" id="locDate" value="${S.loc.date}" style="font:14px var(--mono);border:1px solid var(--line);border-radius:4px;padding:4px 6px"></div>`+
+   F(L('Inclinación panel','Panel tilt'),'loc.tilt',0,90,1,'°')+F(L('Orientación (180 = sur)','Azimuth (180 = south)'),'loc.az',0,359,1,'°')+F(L('Índice de claridad','Clearness index'),'loc.kt',0.1,1,0.05)+F(L('T mínima','Min T'),'loc.Tmin',-10,40,1,'°C')+F(L('T máxima','Max T'),'loc.Tmax',0,50,1,'°C');
   $('locF').querySelectorAll('[data-p]').forEach(el=>el.addEventListener('change',()=>{let v=parseFloat(el.value);if(!isFinite(v))return;v=Math.min(+el.max,Math.max(+el.min,v));set(el.dataset.p,v);
     if(['loc.lat','loc.lon','loc.tz','loc.alt'].includes(el.dataset.p)){S.loc.city='custom';renderLoc()}simDay()}));
   $('locDate').onchange=e=>{if(e.target.value){S.loc.date=e.target.value;simDay()}};
 }
-$('city').onchange=e=>{const c=CITIES[e.target.value];S.loc.city=e.target.value;if(c.length>1){[S.loc.lat,S.loc.lon,S.loc.Tmin,S.loc.Tmax,S.loc.alt]=[c[1],c[2],c[3],c[4],c[5]];S.loc.tz=-6}renderLoc();simDay()};
+$('city').onchange=e=>{const c=CITIES[e.target.value];S.loc.city=e.target.value;if(e.target.value!=='custom'){[S.loc.lat,S.loc.lon,S.loc.Tmin,S.loc.Tmax,S.loc.alt]=[c[1],c[2],c[3],c[4],c[5]];S.loc.tz=-6}renderLoc();simDay()};
 $('hour').oninput=e=>{stopPlay();setHour(+e.target.value)};
-$('play').onclick=()=>{if(anim){stopPlay();return}if(curH>=24)curH=0;$('play').textContent='❚❚ Pausar';anim=requestAnimationFrame(playStep)};
+$('play').onclick=()=>{if(anim){stopPlay();return}if(curH>=24)curH=0;$('play').textContent=L('❚❚ Pausar','❚❚ Pause');anim=requestAnimationFrame(playStep)};
 
 /* ---------- netlist ---------- */
 function netlist(){
   const c=S.cell,ar=c.n*kB*TR,I0=c.Isc/(Math.exp(c.Voc/ar)-1),N=S.mod.rows*S.mod.cols,mt=metrics(curves());
-  const L=[`* Arreglo FV ${S.arr.Ns}S x ${S.arr.Np}P, modulos de ${N} celdas - modelo de un diodo`,
+  const L=[LANG==='en'?`* PV array ${S.arr.Ns}S x ${S.arr.Np}P, modules of ${N} cells - single-diode model`:`* Arreglo FV ${S.arr.Ns}S x ${S.arr.Np}P, modulos de ${N} celdas - modelo de un diodo`,
   `.param Isc=${c.Isc} Ki=${c.Ki} Rs=${c.Rs} Rsh=${c.Rsh}`,
   `.subckt CELDA p n params: G=1000 T=25`,`Bph n d I=(Isc+Ki*(T-25))*G/1000`,`D1 d n DCELL temp={T}`,`Rsh d n {Rsh}`,`Rs d p {Rs}`,`.ends CELDA`,
   `.model DCELL D(Is=${I0.toExponential(4)} N=${c.n} Eg=${c.Eg} XTI=3)`,`.model DBP D(Is=1e-9 N=1.5 Rs=0.005)`,`.model DBLK D(Is=1e-9 N=1.5 Rs=0.005)`,''];
@@ -561,7 +570,7 @@ function netlist(){
         const g=groupOf(k);if(k===N-1||groupOf(k+1)!==g){if(S.bp[s][m][g])L.push(`DBP_${s+1}_${m+1}_${g+1} ${gStart} ${node} DBP`);gStart=node}}}
     L.push(S.arr.block?`DBLK_${s+1} ${node} PV DBLK`:`R_${s+1} ${node} PV 1u`,'');
   }
-  L.push(`Vpv PV 0 0`,`.dc Vpv 0 ${Math.ceil(mt.Voc+1)} 0.05`,`* Graficar -I(Vpv) y -V(PV)*I(Vpv)`,`.end`);
+  L.push(`Vpv PV 0 0`,`.dc Vpv 0 ${Math.ceil(mt.Voc+1)} 0.05`,LANG==='en'?`* Plot -I(Vpv) and -V(PV)*I(Vpv)`:`* Graficar -I(Vpv) y -V(PV)*I(Vpv)`,`.end`);
   return L.join('\n');
 }
 
@@ -582,7 +591,7 @@ document.querySelectorAll('.blk').forEach(b=>b.onclick=()=>{S.sel={type:b.datase
 $('btnDay').onclick=simDay;
 $('btnNet').onclick=()=>{$('netTxt').value=netlist();$('cpMsg').textContent='';$('dlg').showModal()};
 $('btnClose').onclick=()=>$('dlg').close();
-$('btnCopy').onclick=async()=>{try{await navigator.clipboard.writeText($('netTxt').value);$('cpMsg').textContent='Copiado.'}catch(e){$('netTxt').select();$('cpMsg').textContent='Selecciona y copia manualmente.'}};
+$('btnCopy').onclick=async()=>{try{await navigator.clipboard.writeText($('netTxt').value);$('cpMsg').textContent=L('Copiado.','Copied.')}catch(e){$('netTxt').select();$('cpMsg').textContent=L('Selecciona y copia manualmente.','Select and copy manually.')}};
 window.addEventListener('resize',()=>{schedule(false);drawDay()});
 
 /* ---------- agregar / quitar celdas ---------- */
@@ -597,9 +606,9 @@ function resizeMod(rows,cols){
 }
 function renderSize(){
   const N=S.mod.rows*S.mod.cols;
-  const st=(k,label,val,max)=>`<div class="step"><span>${label}</span><div class="ctl"><button data-k="${k}" data-d="-1" ${val<=1?'disabled':''} title="Quitar" aria-label="Quitar ${label}">−</button><b>${val}</b><button data-k="${k}" data-d="1" ${val>=max?'disabled':''} title="Agregar" aria-label="Agregar ${label}">+</button></div></div>`;
-  $('sizebar').innerHTML=st('rows','Filas de celdas',S.mod.rows,LIM.rows)+st('cols','Columnas',S.mod.cols,LIM.cols)+st('groups','Grupos bypass',S.mod.groups,Math.min(LIM.groups,N))+st('Ns','Módulos/string',S.arr.Ns,LIM.Ns)+st('Np','Strings',S.arr.Np,LIM.Np)+
-    `<span class="tot">Celdas por módulo <b>${N}</b> · Total <b>${N*S.arr.Ns*S.arr.Np}</b></span>`;
+  const st=(k,label,val,max)=>`<div class="step"><span>${label}</span><div class="ctl"><button data-k="${k}" data-d="-1" ${val<=1?'disabled':''} title="${L('Quitar','Remove')}" aria-label="${L('Quitar','Remove')} ${label}">−</button><b>${val}</b><button data-k="${k}" data-d="1" ${val>=max?'disabled':''} title="${L('Agregar','Add')}" aria-label="${L('Agregar','Add')} ${label}">+</button></div></div>`;
+  $('sizebar').innerHTML=st('rows',L('Filas de celdas','Cell rows'),S.mod.rows,LIM.rows)+st('cols',L('Columnas','Columns'),S.mod.cols,LIM.cols)+st('groups',L('Grupos bypass','Bypass groups'),S.mod.groups,Math.min(LIM.groups,N))+st('Ns',L('Módulos/string','Modules/string'),S.arr.Ns,LIM.Ns)+st('Np','Strings',S.arr.Np,LIM.Np)+
+    `<span class="tot">${L('Celdas por módulo','Cells per module')} <b>${N}</b> · Total <b>${N*S.arr.Ns*S.arr.Np}</b></span>`;
   $('sizebar').querySelectorAll('button').forEach(b=>b.onclick=()=>{const k=b.dataset.k,d=+b.dataset.d;
     if(k==='rows')resizeMod(S.mod.rows+d,S.mod.cols);
     else if(k==='cols')resizeMod(S.mod.rows,S.mod.cols+d);
@@ -609,6 +618,21 @@ function renderSize(){
 }
 
 function renderAll(){ensure();renderSize();drawSch();renderInsp();renderTree();schedule(true)}
+function cityName(k){const c=CITIES[k];return k==='custom'?L(c[0],c[1]):c[0]}
+function setLang(l,init){
+  LANG=l==='en'?'en':'es';document.documentElement.lang=LANG;
+  document.title=L('Sistema Fotovoltaico Seminario','Photovoltaic System Simulator');
+  document.querySelectorAll('[data-en]').forEach(el=>{if(el.dataset.es==null)el.dataset.es=el.innerHTML;el.innerHTML=LANG==='en'?el.dataset.en:el.dataset.es});
+  document.querySelectorAll('.lang button').forEach(b=>b.classList.toggle('on',b.dataset.lang===LANG));
+  try{localStorage.setItem('lang',LANG)}catch(e){}
+  try{const u=new URL(location.href);u.searchParams.set('lang',LANG);history.replaceState(null,'',u)}catch(e){}
+  if(!init){renderAll();renderLoc();if(DAY)simDay();else drawScene();if(!anim)$('play').textContent=L('▶ Animar día','▶ Animate day')}
+}
+document.querySelectorAll('.lang button').forEach(b=>b.onclick=()=>setLang(b.dataset.lang));
+(()=>{let l=null;try{l=new URL(location.href).searchParams.get('lang')}catch(e){}
+  if(!l){try{l=localStorage.getItem('lang')}catch(e){}}
+  if(!l)l=(navigator.language||'es').toLowerCase().startsWith('es')?'es':'en';
+  setLang(l,true)})();
 ensure();renderAll();renderLoc();setTimeout(simDay,50);
 </script>
 </body>

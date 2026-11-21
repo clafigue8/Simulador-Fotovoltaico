@@ -4,6 +4,8 @@ Simulador interactivo de un sistema fotovoltaico aislado, desde la celda hasta e
 
 **▶ Abrir el simulador:** https://clafigue8.github.io/Simulador-Fotovoltaico/
 
+*English version:* https://clafigue8.github.io/Simulador-Fotovoltaico/?lang=en · [Read in English](#english)
+
 ![Esquema del sistema con sombra lateral sobre un módulo](docs/captura.png)
 
 ## Qué hace
@@ -26,8 +28,24 @@ No necesita instalación. Abre el enlace de arriba o descarga `index.html` y áb
 2. Usa **Pintar sombra** y arrastra sobre las celdas para simular sombras.
 3. Mira cómo cambian los resultados, las curvas y el punto de operación con la batería.
 4. En **Sitio y posición del sol**, elige ubicación y fecha, y pulsa **Simular día**.
+5. Usa el botón **ES / EN** (arriba a la derecha) para cambiar el idioma.
 
 ![Vista completa del simulador](docs/captura-completa.png)
+
+## English
+
+Interactive simulator of a stand-alone photovoltaic system, from a single cell up to the full array with battery, charge controller and load. Built for the Research Seminar of Electrical Engineering at UNAH (Honduras).
+
+**▶ Open the simulator:** https://clafigue8.github.io/Simulador-Fotovoltaico/?lang=en
+
+- **Single-diode cell model** with irradiance and temperature dependence.
+- **Full hierarchy:** cell → module → string → array; add or remove cell rows/columns, bypass groups, modules and strings.
+- **Partial shading** per cell, with **bypass and blocking diodes**, showing multiple local maxima on the P‑V curve.
+- **I‑V and P‑V curves**, MPP, and the **battery / MPPT or PWM controller** operating point.
+- **Sun position and one-day simulation** for cities in Honduras or a custom site.
+- **LTspice netlist export.**
+
+No installation needed: open the link or download `index.html`. Use the **ES / EN** button in the top-right corner to switch languages.
 
 ## Autores
 
