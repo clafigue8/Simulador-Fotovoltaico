@@ -194,13 +194,13 @@
         h += `<text x="${x0 + 8}" y="${y0 + 17}" font-size="12.5" font-weight="650" fill="#1d3b6e" data-t="mod" data-s="${s}" data-m="${m}" style="cursor:pointer">U2·${s + 1}.${m + 1}</text>`;
         for (let g = 0; g < groups; g++) {
           const on = S.bp[s][m][g], bx = x0 + mw - 8 - (groups - g) * 25;
-          h += `<g data-t="bp" data-s="${s}" data-m="${m}" data-g="${g}" style="cursor:pointer"><rect data-t="bp" data-s="${s}" data-m="${m}" data-g="${g}" x="${bx}" y="${y0 + 5}" width="22" height="15" rx="3" fill="${on ? '#c98a1b' : '#fff'}" stroke="#c98a1b"/><text data-t="bp" data-s="${s}" data-m="${m}" data-g="${g}" x="${bx + 11}" y="${y0 + 16}" font-size="10" font-weight="600" text-anchor="middle" fill="${on ? '#fff' : '#c98a1b'}">D${g + 1}</text></g>`;
+          h += `<g data-t="bp" data-s="${s}" data-m="${m}" data-g="${g}" style="cursor:pointer"><rect data-t="bp" data-s="${s}" data-m="${m}" data-g="${g}" x="${bx}" y="${y0 + 5}" width="22" height="15" rx="3" fill="${on ? '#ec4899' : '#fff'}" stroke="#ec4899"/><text data-t="bp" data-s="${s}" data-m="${m}" data-g="${g}" x="${bx + 11}" y="${y0 + 16}" font-size="10" font-weight="600" text-anchor="middle" fill="${on ? '#fff' : '#ec4899'}">D${g + 1}</text></g>`;
         }
         const selG = (q.type === 'cell' && q.s === s && q.m === m) ? groupOf(q.c) : -1;
         for (let c = 0; c < n; c++) {
           const [col, row] = cellXY(c), G = S.G[s][m][c];
           const sel = q.type === 'cell' && q.s === s && q.m === m && q.c === c, inG = groupOf(c) === selG, ht = hot.has(`${s}.${m}.${c}`);
-          h += `<rect data-t="cell" data-s="${s}" data-m="${m}" data-c="${c}" x="${x0 + cx0 + col * cs + .5}" y="${y0 + hdr + row * cs + .5}" width="${cs - 1}" height="${cs - 1}" rx="1.5" fill="${gColor(G)}" stroke="${sel ? '#e3a63c' : ht ? '#e53950' : inG ? '#c98a1b' : '#fff'}" stroke-width="${sel ? 2.4 : ht ? 2 : inG ? 1.2 : .6}" style="cursor:pointer"/>`;
+          h += `<rect data-t="cell" data-s="${s}" data-m="${m}" data-c="${c}" x="${x0 + cx0 + col * cs + .5}" y="${y0 + hdr + row * cs + .5}" width="${cs - 1}" height="${cs - 1}" rx="1.5" fill="${gColor(G)}" stroke="${sel ? '#e3a63c' : ht ? '#e53950' : inG ? '#ec4899' : '#fff'}" stroke-width="${sel ? 2.4 : ht ? 2 : inG ? 1.2 : .6}" style="cursor:pointer"/>`;
         }
       }
     }
@@ -568,7 +568,7 @@
     $('scene').innerHTML = `<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${top}"/><stop offset="1" stop-color="${bot}"/></linearGradient><radialGradient id="glow"><stop offset="0" stop-color="#ffe7a8" stop-opacity=".9"/><stop offset="1" stop-color="#ffe7a8" stop-opacity="0"/></radialGradient></defs>
       <rect width="${W}" height="${gy}" fill="url(#sky)"/>${stars}
       ${e < -4 ? `<g opacity="${Math.min(1, (-e - 4) / 8)}"><circle cx="${W - X(sp.az)}" cy="${Math.max(50, Y(Math.min(55, -e * 0.9 + 20)))}" r="13" fill="#eef2f8"/><circle cx="${W - X(sp.az) + 6}" cy="${Math.max(50, Y(Math.min(55, -e * 0.9 + 20))) - 3}" r="11" fill="${top}"/></g>` : ''}
-      <polyline points="${path}" fill="none" stroke="${day > 0.5 ? '#c98a1b' : '#c9b488'}" stroke-dasharray="3 4" stroke-width="1.3"/>
+      <polyline points="${path}" fill="none" stroke="${day > 0.5 ? '#ec4899' : '#f0abfc'}" stroke-dasharray="3 4" stroke-width="1.3"/>
       ${e > -6 ? `<circle cx="${sunX}" cy="${sunY}" r="${34 * glow + 6}" fill="url(#glow)"/><circle cx="${sunX}" cy="${sunY}" r="11" fill="${e > 0 ? '#e8b84a' : '#c9864a'}" stroke="#fff3cf" stroke-width="1.5"/>` : ''}
       ${cloud > 0.25 && e > 0 ? `<g opacity="${Math.min(0.9, cloud)}" fill="#eef1f5"><ellipse cx="${sunX - 18}" cy="${sunY + 6}" rx="34" ry="13"/><ellipse cx="${sunX + 14}" cy="${sunY + 2}" rx="28" ry="15"/></g>` : ''}
       ${e > 0.5 ? `<line x1="${sunX}" y1="${sunY}" x2="${px}" y2="${py - 14}" stroke="#e8b84a" stroke-width="1" stroke-dasharray="2 5" opacity=".7"/>` : ''}

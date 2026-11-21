@@ -70,7 +70,7 @@
       grass: new THREE.MeshStandardMaterial({ color: 0x7fa05a, roughness: 1 }),
       wall: new THREE.MeshStandardMaterial({ color: 0xf1e9db, roughness: 0.9 }),
       wall2: new THREE.MeshStandardMaterial({ color: 0xd9dde3, roughness: 0.85, metalness: 0.1 }),
-      roof: new THREE.MeshStandardMaterial({ color: 0xa4553b, roughness: 0.8 }),
+      roof: new THREE.MeshStandardMaterial({ color: 0xc97a8c, roughness: 0.8 }),
       roof2: new THREE.MeshStandardMaterial({ color: 0xb9bec6, roughness: 0.7, metalness: 0.2 }),
       trim: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 }),
       glass: new THREE.MeshStandardMaterial({ color: 0x6f8aa6, roughness: 0.15, metalness: 0.6 }),
@@ -252,7 +252,7 @@
       // carretera y autos
       box(CW + 60, 0.03, 12, M.road, 0, 0.02, CD / 2 + 9, false, true);
       box(CW + 8, 0.02, CD + 8, M.wall2, 0, 0.01, 0, false, true);
-      const carCols = [0x2b5aa6, 0xe3a63c, 0xf4f5f7];
+      const carCols = [0x2b5aa6, 0xf472b6, 0xf4f5f7];
       [[-CW / 3 + 1.6, 0.6], [CW / 3 - 1.6, -0.5], [CW / 2 + 12, CD / 2 + 8]].forEach(([x, z], i) => { const cm = new THREE.MeshStandardMaterial({ color: carCols[i], roughness: 0.35, metalness: 0.4 }); box(1.8, 0.8, 4.2, cm, x, 0.65, z); box(1.6, 0.65, 2.2, M.glass, x, 1.35, z - 0.2); });
       tree(-CW / 2 - 6, CD / 2 + 2, 1.3); tree(CW / 2 + 3, sz - 3, 1.2); tree(-CW / 2 - 4, sz, 1.1);
       gridPole(-CW / 2 - 8, CD / 2 + 4, SH * 0.8, -SW / 2, sz + SD / 2, 10);
