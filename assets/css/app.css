@@ -336,3 +336,15 @@ footer{border-color:var(--line)}
 input[type=range]{accent-color:#ec4899}
 .fnode.hot .ic{border-color:#f472b6}
 .q .tip{margin:6px 0 2px}
+
+/* ---------- vista 3D de Inicio más baja y HUD discreto ---------- */
+.hero .c3d{aspect-ratio:16/9;max-height:58vh}
+.hud{padding:10px 14px;min-width:0;max-width:260px}
+.hud .big{font-size:22px}
+@media (max-width:760px){
+  .hero .c3d{aspect-ratio:4/3;max-height:46vh}
+  .hud{top:8px;left:8px;flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:2px 8px;padding:6px 10px;font-size:11px;max-width:70%;background:rgba(10,10,16,.45);backdrop-filter:blur(4px);border-radius:10px}
+  .hud b{font-size:12px}.hud .big{font-size:15px;margin:0}
+  .hud span:nth-child(4),.hud span:nth-child(5){display:none}
+  .hctl{padding:8px 10px;gap:8px}
+}
