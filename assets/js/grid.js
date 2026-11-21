@@ -65,7 +65,7 @@
   let lastKind = null;
   EXT.grid = function () {
     const hs = EXT.homeState && EXT.homeState();
-    if (hs && hs.HOME.kind !== lastKind) { lastKind = hs.HOME.kind; if (lastKind === 'com') Object.assign(GS, { svc: 'bt480', kva: 300, z: 5.75, xr: 6, load: Math.round(hs.HOME.kwh / 730 * 2 * 10) / 10, vfd: 20, mhp: 25 }); else Object.assign(GS, { svc: 'res', kva: 50, z: 2.5, xr: 2.5, load: 5, vfd: 0, mhp: 1 }); }
+    if (hs && hs.HOME.kind !== lastKind) { lastKind = hs.HOME.kind; if (['com', 'gas', 'farm'].includes(lastKind)) Object.assign(GS, { svc: 'bt480', kva: 300, z: 5.75, xr: 6, load: Math.round(hs.HOME.kwh / 730 * 2 * 10) / 10, vfd: 20, mhp: 25 }); else Object.assign(GS, { svc: 'res', kva: 50, z: 2.5, xr: 2.5, load: 5, vfd: 0, mhp: 1 }); }
     const { kpi, chartBox } = A(), s = sys();
     const opt = (k, v, t) => `<option value="${v}" ${String(GS[k]) === String(v) ? 'selected' : ''}>${t}</option>`;
     $('p-grid').innerHTML = `

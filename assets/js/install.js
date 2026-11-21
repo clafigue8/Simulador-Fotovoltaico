@@ -102,7 +102,7 @@
     const law = EXT.lawChecks(c);
     const okN = law.filter(x => !x.info && x.ok).length, totN = law.filter(x => !x.info).length;
     $(target).innerHTML = `
-      <div class="card"><div class="chead"><div><h3>${L('Lo que dice la ley en Honduras', 'What Honduran law says')}</h3><p class="sub">${L('Usuarios autoproductores conectados a la red de distribución.', 'Self-generating users connected to the distribution network.')}</p></div><span class="badge ${okN === totN ? 'ok' : 'bad'}">${okN}/${totN} ${L('requisitos cumplidos', 'requirements met')}</span></div>
+      <div class="card"><div class="chead"><div><h3>${L('Lo que dice la ley en Honduras', 'What Honduran law says')}</h3><p class="sub">${L('Usuarios autoproductores conectados a la red de distribución.', 'Self-generating users connected to the distribution network.')}</p></div>${totN ? `<span class="badge ${okN === totN ? 'ok' : 'bad'}">${okN}/${totN} ${L('requisitos cumplidos', 'requirements met')}</span>` : ''}</div>
         <ul class="checks cols2">${law.map(x => `<li class="${x.info ? 'info' : x.ok ? 'ok' : x.warn ? 'warn' : 'bad'}"><i>${x.info ? 'i' : x.ok ? '✓' : '!'}</i><div><b>${x.t}</b><span>${x.d}</span></div></li>`).join('')}</ul></div>
       <div class="grid g-2" style="margin-top:24px">
         <div class="card" style="grid-column:1/-1"><h3>${L('Paneles de última generación (2026)', 'Latest-generation panels (2026)')}</h3><p class="sub">${L('Modelos de fabricantes de primer nivel según publicaciones de 2026; las cifras varían entre fuentes, verifica la ficha técnica.', 'Tier‑1 manufacturer models according to 2026 publications; figures vary between sources, check the datasheet.')}</p>

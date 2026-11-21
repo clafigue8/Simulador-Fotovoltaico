@@ -59,7 +59,8 @@
     controls.addEventListener('change', () => need = true);
     function loop() {
       if (!alive) return; requestAnimationFrame(loop); controls.update();
-      if (cloudiness > 0.02 && document.visibilityState === 'visible') { clouds.children.forEach(c => { c.userData.a += c.userData.v; if (c.userData.a > Math.PI * 2.05) c.userData.a = Math.PI * 0.95; }); placeClouds(); need = true; }
+      const nowT = performance.now();
+      if (cloudiness > 0.02 && document.visibilityState === 'visible' && nowT - (loop.t || 0) > (span > 120 ? 120 : 45)) { loop.t = nowT; clouds.children.forEach(c => { c.userData.a += c.userData.v; if (c.userData.a > Math.PI * 2.05) c.userData.a = Math.PI * 0.95; }); placeClouds(); need = true; }
       if (need || controls.autoRotate) { renderer.render(scene, camera); need = false; }
     }
     loop();
@@ -100,7 +101,7 @@
     function panels(list, pw, ph) {
       const geo = new THREE.BoxGeometry(pw, 0.04, ph), fgeo = new THREE.BoxGeometry(pw + 0.04, 0.035, ph + 0.04);
       const im = new THREE.InstancedMesh(geo, panelMat, list.length), fm = new THREE.InstancedMesh(fgeo, M.frame, list.length);
-      im.castShadow = true; im.receiveShadow = true; fm.castShadow = true;
+      const big = list.length > 1500; im.castShadow = !big; im.receiveShadow = !big; fm.castShadow = !big;
       const o = new THREE.Object3D();
       list.forEach((p, i) => {
         o.position.set(p.x, p.y + 0.02, p.z); o.rotation.set(p.rx, p.ry || 0, 0, 'YXZ'); o.updateMatrix(); im.setMatrixAt(i, o.matrix);
@@ -223,6 +224,75 @@
       g.rotation.y = -(azim - 180) * rad;
       return { W, D, H };
     }
+    /* ---------- gasolinera: paneles sobre la marquesina y la tienda ---------- */
+    function buildGas(n, mod, tilt, azim) {
+      const pw = mod.pw, ph = mod.ph, gap = 0.02;
+      const rowsC = 3, colsC = Math.max(7, Math.ceil(Math.min(n, 120) / rowsC));
+      const CW = Math.max(16, colsC * (pw + gap) + 1.2), CD = Math.max(9, rowsC * (ph * Math.cos(5 * rad) + 0.25) + 1.2), CH = 5.6;
+      span = Math.max(CW, 30) * 1.25 + 18;
+      const g = new THREE.Group(); world.add(g); const old = world; world = g;
+      const red = new THREE.MeshStandardMaterial({ color: 0xc0392b, roughness: 0.5 }), white = M.trim;
+      // marquesina
+      box(CW, 0.7, CD, white, 0, CH, 0); box(CW + 0.05, 0.35, CD + 0.05, red, 0, CH - 0.2, 0, false);
+      for (const x of [-CW / 3, CW / 3]) for (const z of [-CD / 4, CD / 4]) box(0.45, CH, 0.45, M.wall2, x, CH / 2, z);
+      // islas de bombas
+      for (const x of [-CW / 3, 0, CW / 3]) { box(1.2, 0.25, 4.2, M.wall2, x, 0.12, 0); for (const z of [-1, 1]) { box(0.8, 1.8, 0.5, white, x, 1.15, z * 0.9); box(0.82, 0.35, 0.52, red, x, 1.95, z * 0.9, false); } }
+      // paneles sobre la marquesina (inclinación baja)
+      const list = []; let k = 0;
+      for (let r = 0; r < rowsC && k < n; r++) for (let c = 0; c < colsC && k < n; c++, k++) list.push({ x: (c - (colsC - 1) / 2) * (pw + gap), y: CH + 0.55, z: CD / 2 - 0.6 - (r + 0.5) * (ph * Math.cos(5 * rad) + 0.25), rx: 5 * rad });
+      // tienda con techo plano y paneles restantes
+      const SW = Math.max(12, CW * 0.7), SD = 9, SH = 4.2, sz = -CD / 2 - SD / 2 - 6;
+      box(SW, SH, SD, M.wall, 0, SH / 2, sz); box(SW + 0.3, 0.5, SD + 0.3, white, 0, SH + 0.25, sz);
+      box(SW * 0.6, 2.3, 0.1, M.glass, -SW * 0.1, 1.3, sz + SD / 2 + 0.05, false); box(SW, 0.7, 0.12, red, 0, SH - 0.5, sz + SD / 2 + 0.07, false);
+      const rest = n - k, cS = Math.max(1, Math.floor((SW - 1) / (pw + gap))), L2 = ph * Math.cos(tilt * rad), pitch = L2 * 1.9;
+      for (let i = 0; i < rest && i < 200; i++) { const r = Math.floor(i / cS), c = i % cS; list.push({ x: (c - (cS - 1) / 2) * (pw + gap), y: SH + 0.85, z: sz + SD / 2 - 1 - L2 / 2 - r * pitch, rx: tilt * rad }); }
+      panels(list, pw, ph);
+      // poste de precios
+      const px = CW / 2 + 6; box(0.5, 9, 0.5, M.pole, px, 4.5, CD / 2 + 2); box(3.2, 3.6, 0.5, red, px, 8, CD / 2 + 2); box(2.8, 2.2, 0.55, white, px, 7.6, CD / 2 + 2, false);
+      // carretera y autos
+      box(CW + 60, 0.03, 12, M.road, 0, 0.02, CD / 2 + 9, false, true);
+      box(CW + 8, 0.02, CD + 8, M.wall2, 0, 0.01, 0, false, true);
+      const carCols = [0x2b5aa6, 0xe3a63c, 0xf4f5f7];
+      [[-CW / 3 + 1.6, 0.6], [CW / 3 - 1.6, -0.5], [CW / 2 + 12, CD / 2 + 8]].forEach(([x, z], i) => { const cm = new THREE.MeshStandardMaterial({ color: carCols[i], roughness: 0.35, metalness: 0.4 }); box(1.8, 0.8, 4.2, cm, x, 0.65, z); box(1.6, 0.65, 2.2, M.glass, x, 1.35, z - 0.2); });
+      tree(-CW / 2 - 6, CD / 2 + 2, 1.3); tree(CW / 2 + 3, sz - 3, 1.2); tree(-CW / 2 - 4, sz, 1.1);
+      gridPole(-CW / 2 - 8, CD / 2 + 4, SH * 0.8, -SW / 2, sz + SD / 2, 10);
+      world = old; g.rotation.y = -(azim - 180) * rad;
+      return { W: CW, D: CD + SD + 6, H: CH };
+    }
+    /* ---------- parque solar en suelo ---------- */
+    function buildFarm(n, mod, tilt, azim) {
+      const pw = mod.pw, ph = mod.ph, gap = 0.02, shown = Math.min(n, 5000);
+      const tableD = 2 * ph * Math.cos(tilt * rad), pitch = tableD / 0.42;          // mesas 2P en vertical, GCR ≈ 0,42
+      const perTable = 2, colsPerRow = Math.max(20, Math.round(Math.sqrt(shown / perTable * pitch / (pw + gap)))), rows = Math.ceil(shown / perTable / colsPerRow);
+      const blockW = colsPerRow * (pw + gap), FW = blockW + 30, FD = rows * pitch + 30;
+      span = Math.max(FW, FD) * 0.75 + 30;
+      const g = new THREE.Group(); world.add(g); const old = world; world = g;
+      const gravel = new THREE.MeshStandardMaterial({ color: 0xb8ae96, roughness: 1 });
+      box(FW, 0.03, FD, new THREE.MeshStandardMaterial({ color: 0x9db070, roughness: 1 }), 0, 0.01, 0, false, true);
+      box(6, 0.04, FD, gravel, -blockW / 2 - 8, 0.02, 0, false, true); box(FW, 0.04, 5, gravel, 0, 0.02, FD / 2 - 6, false, true);
+      const list = []; let k = 0; const z0 = FD / 2 - 14;
+      for (let r = 0; r < rows && k < shown; r++) {
+        for (let c = 0; c < colsPerRow && k < shown; c++) for (let j = 0; j < perTable && k < shown; j++, k++) {
+          list.push({ x: (c - (colsPerRow - 1) / 2) * (pw + gap), y: 1.0 + (j + 0.5) * ph * Math.sin(tilt * rad), z: z0 - r * pitch - (j + 0.5) * ph * Math.cos(tilt * rad), rx: tilt * rad });
+        }
+      }
+      panels(list, pw, ph);
+      // estructura (vigas) y estaciones de inversores/transformadores
+      for (let r = 0; r < rows; r++) box(blockW, 0.08, 0.08, M.rack, 0, 0.9, z0 - r * pitch - tableD / 2, true, false);
+      const st = Math.max(1, Math.round(rows / 6));
+      for (let r = 0; r < rows; r += st) box(2.4, 2.4, 6, M.wall2, -blockW / 2 - 8, 1.2, z0 - r * pitch - tableD / 2);
+      // cerca perimetral
+      const fence = new THREE.MeshStandardMaterial({ color: 0x8a8f96, roughness: 0.6, metalness: 0.4, transparent: true, opacity: 0.7 });
+      box(FW, 2, 0.05, fence, 0, 1, FD / 2, false); box(FW, 2, 0.05, fence, 0, 1, -FD / 2, false); box(0.05, 2, FD, fence, FW / 2, 1, 0, false); box(0.05, 2, FD, fence, -FW / 2, 1, 0, false);
+      // subestación elevadora
+      const sx = FW / 2 - 12, sz2 = FD / 2 - 12;
+      box(16, 0.1, 14, gravel, sx, 0.05, sz2, false, true);
+      box(4, 3.5, 3, M.xfmr, sx, 1.75, sz2); for (const dx of [-5, 5]) { box(0.4, 10, 0.4, M.pole, sx + dx, 5, sz2 - 4); } box(10.4, 0.4, 0.4, M.pole, sx, 9.8, sz2 - 4);
+      gridPole(sx + 30, sz2 - 4, 9.5, sx + 5, sz2 - 4, 14);
+      tree(-FW / 2 - 8, FD / 2 + 6, 1.6); tree(FW / 2 + 8, -FD / 2, 1.8); tree(-FW / 2 - 10, -FD / 2 - 8, 1.4);
+      world = old; g.rotation.y = -(azim - 180) * rad;
+      return { W: FW, D: FD, H: 3 };
+    }
     function gridPole(x, z, hy, tx, tz, h = 9) {
       const p = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.2, h, 10), M.pole); p.position.set(x, h / 2, z); p.castShadow = true; world.add(p);
       box(2.4, 0.12, 0.12, M.pole, x, h - 0.6, z);
@@ -234,8 +304,8 @@
     function build(o) {
       scene.remove(world); world.traverse(x => { if (x.geometry) x.geometry.dispose(); }); world = new THREE.Group(); scene.add(world);
       const ground = new THREE.Mesh(new THREE.CircleGeometry(600, 64), M.grass); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; world.add(ground);
-      const dims = o.kind === 'com' ? buildPlant(o.n, o.mod, o.tilt, o.az) : o.kind === 'apt' ? buildApartments(o.n, o.mod, o.tilt, o.az) : buildHouse(o.n, o.mod, o.tilt, o.az);
-      const d = span * 1.2; camera.position.set(d * 0.48, dims.H * 0.55 + d * 0.2, d * 0.86); controls.target.set(0, dims.H * (o.kind === 'apt' ? 0.75 : 0.7) + span * 0.06, 0); controls.update();
+      const dims = o.kind === 'com' ? buildPlant(o.n, o.mod, o.tilt, o.az) : o.kind === 'apt' ? buildApartments(o.n, o.mod, o.tilt, o.az) : o.kind === 'gas' ? buildGas(o.n, o.mod, o.tilt, o.az) : o.kind === 'farm' ? buildFarm(o.n, o.mod, o.tilt, o.az) : buildHouse(o.n, o.mod, o.tilt, o.az);
+      const d = span * (o.kind === 'farm' ? 1.45 : 1.2); camera.position.set(d * 0.48, dims.H * 0.55 + d * (o.kind === 'farm' ? 0.55 : 0.2), d * 0.86); controls.target.set(0, dims.H * (o.kind === 'apt' ? 0.75 : 0.7) + span * 0.06, 0); controls.update();
       const sc = sun.shadow.camera, e = span * 0.75; sc.left = -e; sc.right = e; sc.top = e; sc.bottom = -e; sc.near = 1; sc.far = span * 4; sc.updateProjectionMatrix();
       need = true; return dims;
     }

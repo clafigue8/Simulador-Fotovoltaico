@@ -15,19 +15,29 @@
   const EXCESS_USD_MWH = { bt: 92.50, mt: 111.27 };   // Acuerdo CREE-89-2026 (según pv magazine, 19/11/2026)
   const FX_DEFAULT = 27.07;                          // BCH, venta, 12/11/2026
 
+  // Costo instalado de referencia (USD/Wp, editable). Parque solar: IRENA 2024, promedio mundial 691 USD/kW.
+  const COST = { res: 1.10, apt: 1.00, com: 0.85, gas: 0.90, farm: 0.69 };
+  const KIND = {
+    res: { kwh: 350, tilt: 20, fmt: 'res' }, apt: { kwh: 4000, tilt: 10, fmt: 'res' }, com: { kwh: 12000, tilt: 10, fmt: 'com' },
+    gas: { kwh: 6000, tilt: 8, fmt: 'com' }, farm: { kwh: 0, tilt: 15, fmt: 'util' }
+  };
+  const GASPROF = [.4, .35, .35, .35, .4, .6, .85, .95, 1, 1, 1, 1, 1, 1, 1, 1, 1, .95, .9, .85, .75, .6, .5, .45];
   const HOME = {
-    kind: 'res', kwh: 350, bills: [350, 350, 350], dmax: 0, cover: 0.9, cells: 60, modId: 3, invIdx: 'auto', tilt: 20, az: 180,
-    volt: 'bt', cost: { res: 1.10, com: 0.85 }, fx: FX_DEFAULT, hour: 10.5, month: 3
+    kind: 'res', kwh: 350, bills: [350, 350, 350], dmax: 0, cover: 0.9, fmt: 'res', modId: null, invIdx: 'auto', tilt: 20, az: 180,
+    volt: 'bt', cost: { ...COST }, fx: FX_DEFAULT, hour: 10.5, month: 3, farmMW: 5, price: 111.27
   };
   let scene = null, calc = null, anim = 0, lastT = 0;
 
   const A = () => window.APP;
-  const isRes = () => HOME.kind !== 'com';
+  const isRes = () => HOME.kind === 'res' || HOME.kind === 'apt';
+  const isFarm = () => HOME.kind === 'farm';
+  const typIdx = f => window.MODULES_TYPICAL_START + { res: 0, com: 1, util: 2 }[f];
+  const profOf = () => isRes() ? window.SYS.LOADPROF.res : HOME.kind === 'gas' ? GASPROF : window.SYS.LOADPROF.com;
+  const curMod = () => window.MODULES[HOME.modId ?? typIdx(HOME.fmt)];
   const L = (es, en) => A().L(es, en);
   const $ = id => document.getElementById(id);
 
-  function modsByCells(n) { return window.MODULES.map((m, i) => ({ m, i })).filter(x => x.m.Ns === n).sort((a, b) => b.m.Pstc - a.m.Pstc); }
-  function invs() { return window.INVERTERS_GRID.map((v, i) => ({ v, i })).filter(x => isRes() ? x.v.seg === 'res' : true); }
+  function invs() { return window.INVERTERS_GRID.map((v, i) => ({ v, i })).filter(x => isRes() ? x.v.seg === 'res' : isFarm() ? x.v.type === 'string3' : true); }
 
   /* ---------- Modelo de inversor de Sandia ---------- */
   function sandia(v, Pdc, Vdc) {
@@ -39,10 +49,11 @@
 
   /* ---------- Cálculo principal ---------- */
   function compute() {
-    const S = A().S, t = A().useTmy(), m = window.MODULES[HOME.modId];
+    if (isFarm()) return computeFarm();
+    const S = A().S, t = A().useTmy(), m = curMod();
     const dmax = HOME.dmax > 0 ? HOME.dmax : estDmax();
     const site = { ...S.site, tilt: HOME.tilt, az: HOME.az };
-    const prof = window.SYS.LOADPROF[isRes() ? 'res' : 'com'], psum = prof.reduce((a, b) => a + b, 0);
+    const prof = profOf(), psum = prof.reduce((a, b) => a + b, 0);
     const md = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
     const lossDC = 0.93;        // suciedad 2 %, mismatch 2 %, cableado 2 %, LID 1 %
     // 1) producción específica (kWh/kWp) con datos horarios
@@ -123,20 +134,56 @@
     let b0 = 0, b1 = 0, credit = 0;
     mon.forEach(x => { b0 += bill(x.load); b1 += bill(x.imp); credit += x.exp * exRate; });
     const save = b0 - b1 + credit;
-    const costHNL = kWpF * 1000 * HOME.cost[isRes() ? 'res' : 'com'] * HOME.fx;
+    const costHNL = kWpF * 1000 * HOME.cost[HOME.kind] * HOME.fx;
     // área
     const area = n * m.A;
     calc = { m, inv, cappedDem, autoIdx: autoInv, auto: HOME.invIdx === 'auto', n, kWp: kWpF, kWac, nInv, perInv, strings, strErr, opt, batt, dcac, Ykwp, mon, tot, b0, b1, credit, save, costHNL, payback: costHNL / Math.max(save, 1), area, capped, Eyear, dmax, peakExp, peakPV, exRate, level, Tmin };
     return calc;
   }
   function estDmax() {
-    const prof = window.SYS.LOADPROF[isRes() ? 'res' : 'com'], psum = prof.reduce((a, b) => a + b, 0);
-    // factor de carga típico: residencial ≈ 0,18; comercial ≈ 0,35; con un mínimo realista por picos de aparatos
-    return isRes() ? Math.max(HOME.kind === 'apt' ? 10 : 2.5, HOME.kwh / 730 / 0.18) : Math.max(5, HOME.kwh / 730 / 0.35);
+    // factor de carga típico: residencial ≈ 0,18; comercial ≈ 0,35; gasolinera ≈ 0,45; con un mínimo realista por picos de aparatos
+    return isRes() ? Math.max(HOME.kind === 'apt' ? 10 : 2.5, HOME.kwh / 730 / 0.18) : Math.max(5, HOME.kwh / 730 / (HOME.kind === 'gas' ? 0.45 : 0.35));
+  }
+
+  /* ---------- Parque solar (generación para la venta) ---------- */
+  function computeFarm() {
+    const S = A().S, t = A().useTmy(), m = curMod(), Pmod = m.Pstc / 1000, site = { ...S.site, tilt: HOME.tilt, az: HOME.az };
+    const bif = m.bifacial ? 1.05 : 1;   // ganancia bifacial típica sobre suelo con vegetación (≈ 5 %)
+    const Sx = { ...S, site, loss: { soil: 0, mism: 0, iam: true, degr: 0, year: 1 }, modInfo: { noct: m.noct } };
+    const hourly = new Float32Array(8760); let Ykwp = 0, Tmin = 99;
+    for (let d = 1, k = 0; d <= 365; d++) for (let h = 0; h < 24; h++, k++) {
+      const w = window.SIM.weatherAt(Sx, t, d, h + 0.5); hourly[k] = Math.max(0, w.Geff / 1000 * (1 + m.gP / 100 * (w.Tc - 25)) * 0.93 * bif); Ykwp += hourly[k]; if (w.Ta < Tmin) Tmin = w.Ta;
+    }
+    let n = Math.max(1, Math.round(HOME.farmMW * 1000 / Pmod)), kWp = n * Pmod;
+    let inv = window.INVERTERS_GRID[HOME.invIdx === 'auto' ? -1 : HOME.invIdx], autoIdx = null;
+    const cands = invs();
+    if (!inv) { let best = null; cands.forEach(x => { const ni = Math.max(1, Math.round(kWp / (x.v.Paco / 1000 * 1.25))); const sc = Math.abs(kWp / (ni * x.v.Paco / 1000) - 1.25) + ni * 0.0005; if (!best || sc < best.sc) best = { sc, i: x.i }; }); autoIdx = best.i; inv = window.INVERTERS_GRID[autoIdx]; }
+    let nInv = Math.max(1, Math.round(kWp / (inv.Paco / 1000 * 1.25)));
+    // strings
+    const VocC = m.Voc + m.bV * (Tmin - 2 - 25), VmpH = m.Vmp + m.bV * 45;
+    const sMax = Math.floor(inv.Vdcmax / VocC), sMin = Math.ceil(inv.Vmin / VmpH), sOk = Math.max(sMin, Math.min(sMax, Math.floor(inv.Vmax / m.Vmp)));
+    let strings = null, strErr = '';
+    if (sMin > sMax) strErr = { why: 'range', sMin, sMax };
+    else { const ns = Math.max(1, Math.round(inv.Paco * 1.25 / (sOk * m.Pstc))); nInv = Math.max(1, Math.round(n / (sOk * ns))); strings = { s: sOk, ns, VocC: VocC * sOk, VmpH: VmpH * sOk, sMin, sMax }; n = sOk * ns * nInv; kWp = n * Pmod; }
+    const kWac = nInv * inv.Paco / 1000, md = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    const mon = Array.from({ length: 12 }, () => ({ pv: 0, load: 0, self: 0, exp: 0, imp: 0 })); let mo = 0, acc = 0, peak = 0;
+    for (let k = 0; k < 8760; k++) { const d = Math.floor(k / 24) + 1; while (d > acc + md[mo]) { acc += md[mo]; mo++; } const Pac = sandia(inv, hourly[k] * kWp * 1000 / nInv) * nInv / 1000; mon[mo].pv += Pac; mon[mo].exp += Pac; if (Pac > peak) peak = Pac; }
+    const E = mon.reduce((a, x) => a + x.pv, 0);   // kWh
+    const revUSD = E / 1000 * HOME.price, invUSD = kWp * 1000 * HOME.cost.farm;
+    const landHa = n * m.A / 0.42 * 1.2 / 10000;
+    calc = { farm: true, m, inv, autoIdx, auto: HOME.invIdx === 'auto', n, kWp, kWac, nInv, perInv: n / nInv, strings, strErr, opt: false, batt: false, dcac: kWp / kWac, Ykwp, mon, tot: { pv: E, exp: E, self: 0, imp: 0, load: 0 }, E, CF: E / (kWac * 8760), revUSD, invUSD, costHNL: invUSD * HOME.fx, save: revUSD * HOME.fx, payback: invUSD / Math.max(revUSD, 1), area: n * m.A, landHa, bif, Eyear: Infinity, dmax: Infinity, peakExp: peak, peakPV: peak, exRate: HOME.price / 1000 * HOME.fx, level: 'mt', Tmin, capped: false, cappedDem: false };
+    return calc;
   }
 
   /* ---------- Normativa ---------- */
   function lawChecks(c) {
+    if (c.farm) return [
+      { ok: true, info: true, t: L('Un parque solar es una empresa generadora, no un autoproductor', 'A solar park is a generating company, not a self-generator'), d: L('Vende su energía en el mercado eléctrico; los límites del Art. 47 (demanda y consumo propio) no aplican.', 'It sells its energy in the electricity market; the Art. 47 limits (own demand and consumption) do not apply.') },
+      { ok: true, info: true, t: L('Inscripción en el Registro Público de Empresas del Sector Eléctrico', 'Registration in the Public Registry of Electricity Sector Companies'), d: L('Obligatoria antes de operar, ante la CREE (RLGIE, Art. 10).', 'Required before operating, with CREE (RLGIE, Art. 10).') },
+      { ok: true, info: true, t: L('Venta mediante contratos o mercado de oportunidad', 'Sales through contracts or the spot market'), d: L('Los contratos deben registrarse ante el Operador del Sistema (ODS) y la CREE; las distribuidoras solo contratan mediante licitaciones públicas internacionales (RLGIE, Art. 11).', 'Contracts must be registered with the System Operator (ODS) and CREE; distribution companies only contract through international public tenders (RLGIE, Art. 11).') },
+      { ok: true, info: true, t: L('Conexión a la red', 'Grid connection'), d: L('Requiere estudios de flujo de potencia, cortocircuito y protecciones, y cumplir la Norma Técnica de Calidad de Transmisión o de Distribución según el punto de conexión.', 'Requires power-flow, short-circuit and protection studies, and compliance with the Transmission or Distribution Quality Technical Standard depending on the connection point.') },
+      { ok: true, info: true, t: L('Permisos del proyecto', 'Project permits'), d: L('Además del registro eléctrico, un parque necesita licencia ambiental y permisos municipales; consulta a la Secretaría de Recursos Naturales y Ambiente.', 'Besides the electricity registration, a park needs an environmental license and municipal permits; check with the Secretariat of Natural Resources and Environment.') }
+    ];
     const out = [], res = isRes();
     out.push({ ok: c.kWac <= c.dmax + 1e-9, t: L('Capacidad en CA no mayor que tu demanda máxima de 12 meses', 'AC capacity not above your 12-month maximum demand'), d: L(`${fx(c.kWac, 1)} kW de inversor frente a ${fx(c.dmax, 1)} kW de demanda máxima ${HOME.dmax > 0 ? '' : '(estimada)'}. RLGIE, Art. 47 A.i.`, `${fx(c.kWac, 1)} kW inverter vs ${fx(c.dmax, 1)} kW maximum demand ${HOME.dmax > 0 ? '' : '(estimated)'}. RLGIE, Art. 47 A.i.`) });
     out.push({ ok: c.tot.pv < c.Eyear, t: L('Producción anual menor que tu consumo anual', 'Annual production below your annual consumption'), d: L(`${fx(c.tot.pv, 0)} kWh/año frente a ${fx(c.Eyear, 0)} kWh/año. RLGIE, Art. 47 A.ii.`, `${fx(c.tot.pv, 0)} kWh/yr vs ${fx(c.Eyear, 0)} kWh/yr. RLGIE, Art. 47 A.ii.`) });
@@ -155,8 +202,6 @@
   EXT.home = function () {
     const { kpi, esc } = A(), S = A().S;
     const cityOpts = Object.entries(A().CITIES).filter(([k]) => k !== 'custom');
-    const ms = modsByCells(HOME.cells);
-    if (!ms.some(x => x.i === HOME.modId)) HOME.modId = ms[0].i;
     const iv = invs(); if (HOME.invIdx !== 'auto' && !iv.some(x => x.i === HOME.invIdx)) HOME.invIdx = 'auto';
     const seg = (key, opts, val) => `<div class="seg wide">${opts.map(([v, t]) => `<button data-h="${key}" data-v="${v}" class="${String(val) === String(v) ? 'on' : ''}">${t}</button>`).join('')}</div>`;
     $('p-home').innerHTML = `
@@ -169,21 +214,24 @@
         <div class="card wiz">
           <h3>${L('Diseña tu sistema solar', 'Design your solar system')}</h3>
           <p class="sub">${L('Responde cinco preguntas y te recomendamos cuántos paneles necesitas.', 'Answer five questions and we will recommend how many panels you need.')}</p>
-          <div class="q"><span class="qn">1</span><div><b>${L('¿Dónde se instalará?', 'Where will it be installed?')}</b>${seg('kind', [['res', '🏠 ' + L('Casa', 'House')], ['apt', '🏢 ' + L('Edificio', 'Building')], ['com', '🏭 ' + L('Industria', 'Industry')]], HOME.kind)}</div></div>
-          <div class="q"><span class="qn">2</span><div><b>${L('¿Cuánta energía consumes al mes?', 'How much energy do you use per month?')}</b><small>${L('Escribe el consumo en kWh de tus últimos 3 recibos de la ENEE. Usar varios meses da un resultado más confiable, porque el consumo cambia según la época del año.', 'Enter the kWh consumption from your last 3 ENEE bills. Using several months gives a more reliable result, because consumption changes with the season.')}</small>
+          <div class="q"><span class="qn">1</span><div><b>${L('¿Qué tipo de proyecto es?', 'What type of project is it?')}</b><div class="kinds">${[['res', '🏠', L('Casa', 'House')], ['apt', '🏢', L('Edificio', 'Building')], ['com', '🏭', L('Industria', 'Industry')], ['gas', '⛽', L('Gasolinera', 'Gas station')], ['farm', '🌞', L('Parque solar', 'Solar park')]].map(([v, ic, t]) => `<button data-h="kind" data-v="${v}" class="${HOME.kind === v ? 'on' : ''}"><span>${ic}</span>${t}</button>`).join('')}</div></div></div>
+          ${isFarm() ? `<div class="q"><span class="qn">2</span><div><b>${L('¿Qué tamaño tendrá el parque?', 'How big will the park be?')}</b><small>${L('Potencia de los paneles en megavatios pico (MWp).', 'Panel power in megawatts peak (MWp).')}</small>
+            <div class="rowin"><input type="range" id="hMW" min="0.5" max="50" step="0.5" value="${HOME.farmMW}"><input class="inp" type="number" id="hMWn" value="${HOME.farmMW}" min="0.1" max="500" step="0.1"><span>MWp</span></div>
+            <div class="rowin"><label style="flex:1;font-size:14px">${L('Precio de venta de la energía', 'Energy sale price')}<small style="display:block">${L('Referencia: excedentes en media tensión, Acuerdo CREE‑89‑2026. En un parque se pacta por contrato.', 'Reference: medium-voltage surplus, Agreement CREE‑89‑2026. A park agrees it by contract.')}</small></label><input class="inp" type="number" id="hPrice" value="${HOME.price}" min="10" max="400" step="0.5" style="width:110px"><span>USD/MWh</span></div></div></div>` : `<div class="q"><span class="qn">2</span><div><b>${L('¿Cuánta energía consumes al mes?', 'How much energy do you use per month?')}</b><small>${L('Escribe el consumo en kWh de tus últimos 3 recibos de la ENEE. Usar varios meses da un resultado más confiable, porque el consumo cambia según la época del año.', 'Enter the kWh consumption from your last 3 ENEE bills. Using several months gives a more reliable result, because consumption changes with the season.')}</small>
             <div class="bills">${[0, 1, 2].map(i => `<label><span>${L(['Último recibo', 'Penúltimo', 'Antepenúltimo'][i], ['Latest bill', 'Previous', 'Two bills ago'][i])}</span><input class="inp" type="number" data-bill="${i}" value="${HOME.bills[i] || ''}" min="0" max="1000000" step="1" placeholder="kWh"></label>`).join('')}</div>
             <div class="rowin" style="justify-content:space-between"><span style="font-size:14px">${L('Promedio mensual', 'Monthly average')}</span><b id="hAvg" style="font-size:16px">${fx(HOME.kwh, 0)} kWh/${L('mes', 'mo')}</b></div>
             <p class="note" id="hBillNote" style="margin:4px 0 0"></p>
             <div class="rowin"><label style="flex:1;font-size:14px">${L('Demanda máxima', 'Maximum demand')} <small style="display:inline">(${L('0 = estimar', '0 = estimate')})</small></label><input class="inp" type="number" id="hDmax" value="${HOME.dmax}" min="0" max="100000" step="0.5" style="width:110px"><span>kW</span></div>
-            ${HOME.kind === 'com' ? `<div style="margin-top:8px">${seg('volt', [['bt', L('Baja tensión', 'Low voltage')], ['mt', L('Media tensión', 'Medium voltage')]], HOME.volt)}</div>` : ''}</div></div>
+            ${!isRes() ? `<div style="margin-top:8px">${seg('volt', [['bt', L('Baja tensión', 'Low voltage')], ['mt', L('Media tensión', 'Medium voltage')]], HOME.volt)}</div>` : ''}</div></div>`}
           <div class="q"><span class="qn">3</span><div><b>${L('¿Dónde está?', 'Where is it?')}</b>${HOME.loc ? '' : `<select class="sel" id="hCity">${cityOpts.map(([k, v]) => `<option value="${k}" ${S.site.city === k ? 'selected' : ''}>${v.name}</option>`).join('')}</select>`}
             <div class="btns" style="margin-top:8px">${HOME.loc ? `<span class="badge ok">📍 ${L('Usando tu ubicación', 'Using your location')}</span><button class="btn sm" id="hLocOff">${L('Volver a elegir ciudad', 'Choose a city instead')}</button>` : `<button class="btn sm" id="hLocOn">📍 ${L('Usar mi ubicación (opcional)', 'Use my location (optional)')}</button>`}</div>
             ${HOME.loc ? `<small style="margin-top:6px">${L(`Coordenadas ${HOME.loc.lat.toFixed(4)}, ${HOME.loc.lon.toFixed(4)} · clima de ${A().CITIES[S.site.city].name} (la ciudad con datos más cercana). Solo se usan en tu navegador.`, `Coordinates ${HOME.loc.lat.toFixed(4)}, ${HOME.loc.lon.toFixed(4)} · weather from ${A().CITIES[S.site.city].name} (nearest city with data). Used only in your browser.`)}</small>` : ''}</div></div>
-          <div class="q"><span class="qn">4</span><div><b>${L('¿Qué panel solar?', 'Which solar panel?')}</b><small>${L('Elige por número de celdas.', 'Choose by number of cells.')}</small>${seg('cells', [[36, '36 ' + L('celdas', 'cells')], [60, '60 ' + L('celdas', 'cells')], [72, '72 ' + L('celdas', 'cells')]], HOME.cells)}
-            <select class="sel" id="hMod" style="margin-top:8px">${ms.map(x => `<option value="${x.i}" ${x.i === HOME.modId ? 'selected' : ''}>${esc(x.m.name.replace(/Co\., Ltd\.|Inc\.|Green Energy Technology/g, ''))} · ${x.m.Pstc.toFixed(0)} W</option>`).join('')}</select></div></div>
+          <div class="q"><span class="qn">4</span><div><b>${L('¿Qué panel solar?', 'Which solar panel?')}</b><small>${L('Así se venden hoy: por formato y potencia. Las marcas grandes fabrican los tres.', 'This is how they are sold today: by format and power. Major brands make all three.')}</small>
+            <div class="fmts">${['res', 'com', 'util'].map(f => { const mm = window.MODULES[typIdx(f)], on = HOME.modId == null && HOME.fmt === f, rec = KIND[HOME.kind].fmt === f, pr = window.PRICE.localUSDW; return `<button class="fmt ${on ? 'on' : ''}" data-fmt="${f}">${rec ? `<span class="badge ok">${L('Recomendado', 'Recommended')}</span>` : ''}<b>${L(mm.short.es, mm.short.en)} · ${mm.Pstc} W</b><span>${L(mm.cellsLabel.es, mm.cellsLabel.en)} · ${fx(mm.H, 2)} × ${fx(mm.W, 2)} m · ${fx(mm.Pstc / mm.A / 10, 1)} %</span><span>${L(mm.use.es, mm.use.en)}</span><span class="price">≈ USD ${Math.round(mm.Pstc * pr[0])}–${Math.round(mm.Pstc * pr[1])} ${L('por panel', 'per panel')} (L ${fx(mm.Pstc * pr[0] * HOME.fx, 0)}–${fx(mm.Pstc * pr[1] * HOME.fx, 0)})</span><small>${mm.brands}</small></button>`; }).join('')}</div>
+            <details style="margin-top:8px"${HOME.modId != null ? ' open' : ''}><summary>${L('Elegir un modelo específico (base de datos CEC)', 'Choose a specific model (CEC database)')}</summary><select class="sel" id="hMod" style="margin-top:8px"><option value="">—</option>${window.MODULES.slice(0, window.MODULES_TYPICAL_START).map((m, i) => `<option value="${i}" ${i === HOME.modId ? 'selected' : ''}>${esc(m.name.replace(/Co\., Ltd\.|Inc\.|Green Energy Technology/g, ''))} · ${m.Pstc.toFixed(0)} W</option>`).join('')}</select></details></div></div>
           <div class="q"><span class="qn">5</span><div><b>${L('¿Qué inversor?', 'Which inverter?')}</b><small>${L('Modelos del mercado (base de datos CEC).', 'Market models (CEC database).')}</small>
             <select class="sel" id="hInv"><option value="auto" ${HOME.invIdx === 'auto' ? 'selected' : ''}>${L('Automático (recomendado)', 'Automatic (recommended)')}</option>${iv.map(x => `<option value="${x.i}" ${x.i === HOME.invIdx ? 'selected' : ''}>${esc(x.v.name)} · ${fx(x.v.Paco / 1000, 1)} kW · ${x.v.Vac} V${x.v.ph === 3 ? ' 3φ' : ''}</option>`).join('')}</select></div></div>
-          <div class="q"><span class="qn">%</span><div><b>${L('¿Qué parte de tu consumo quieres cubrir?', 'What share of your consumption do you want to cover?')}</b><div class="rowin"><input type="range" id="hCover" min="0.2" max="1" step="0.05" value="${HOME.cover}"><b id="hCoverV" style="min-width:52px;text-align:right">${Math.round(HOME.cover * 100)} %</b></div></div></div>
+          ${isFarm() ? '' : `<div class="q"><span class="qn">%</span><div><b>${L('¿Qué parte de tu consumo quieres cubrir?', 'What share of your consumption do you want to cover?')}</b><div class="rowin"><input type="range" id="hCover" min="0.2" max="1" step="0.05" value="${HOME.cover}"><b id="hCoverV" style="min-width:52px;text-align:right">${Math.round(HOME.cover * 100)} %</b></div></div></div>`}
         </div>
       </div>
       <div class="kpis big" id="hK" style="margin-top:24px"></div>
@@ -192,7 +240,7 @@
           <details style="margin-top:14px"><summary>${L('Ajustes de instalación y costos', 'Installation and cost settings')}</summary>
             <div class="field"><label>${L('Inclinación', 'Tilt')} (°)</label><input class="inp" type="number" id="hTilt" value="${HOME.tilt}" min="0" max="45"></div>
             <div class="field"><label>${L('Orientación (180 = sur)', 'Azimuth (180 = south)')} (°)</label><input class="inp" type="number" id="hAz" value="${HOME.az}" min="90" max="270"></div>
-            <div class="field"><label>${L('Costo instalado', 'Installed cost')} (USD/Wp)<small>${L('Supuesto editable: pide cotizaciones.', 'Editable assumption: get quotes.')}</small></label><input class="inp" type="number" id="hCost" value="${HOME.cost[isRes() ? 'res' : 'com']}" min="0.3" max="5" step="0.05"></div>
+            <div class="field"><label>${L('Costo instalado', 'Installed cost')} (USD/Wp)<small>${L('Supuesto editable: pide cotizaciones.', 'Editable assumption: get quotes.')}</small></label><input class="inp" type="number" id="hCost" value="${HOME.cost[HOME.kind]}" min="0.3" max="5" step="0.05"></div>
             <div class="field"><label>${L('Tipo de cambio', 'Exchange rate')} (L/USD)<small>BCH, 12/11/2026</small></label><input class="inp" type="number" id="hFx" value="${HOME.fx}" min="10" max="60" step="0.01"></div>
           </details>
         </div>
@@ -209,9 +257,8 @@
     const P = $('p-home');
     P.querySelectorAll('[data-h]').forEach(b => b.onclick = () => {
       const k = b.dataset.h, v = b.dataset.v;
-      if (k === 'kind') { HOME.kind = v; HOME.kwh = v === 'res' ? 350 : v === 'apt' ? 4000 : 12000; HOME.bills = [HOME.kwh, HOME.kwh, HOME.kwh]; HOME.dmax = 0; HOME.tilt = v === 'res' ? 20 : 10; HOME.invIdx = 'auto'; HOME.cells = v === 'res' ? 60 : 72; }
+      if (k === 'kind') { HOME.kind = v; const K = KIND[v]; HOME.kwh = K.kwh; HOME.bills = [K.kwh, K.kwh, K.kwh]; HOME.dmax = 0; HOME.tilt = K.tilt; HOME.invIdx = 'auto'; HOME.fmt = K.fmt; HOME.modId = null; }
       if (k === 'volt') HOME.volt = v;
-      if (k === 'cells') HOME.cells = +v;
       EXT.home();
     });
     const billNote = () => {
@@ -220,6 +267,8 @@
       const mx = Math.max(...v), mn = Math.min(...v);
       el.textContent = mx > 1.4 * mn ? L(`Tu consumo varía bastante (de ${fx(mn, 0)} a ${fx(mx, 0)} kWh). Usamos el promedio; los meses de más consumo pagarán algo de energía a la ENEE.`, `Your consumption varies quite a lot (${fx(mn, 0)} to ${fx(mx, 0)} kWh). We use the average; higher-consumption months will buy some energy from ENEE.`) : '';
     };
+    $('p-home').querySelectorAll('[data-fmt]').forEach(b => b.onclick = () => { HOME.fmt = b.dataset.fmt; HOME.modId = null; HOME.invIdx = 'auto'; EXT.home(); });
+    if ($('hMW')) { const a = $('hMW'), bn = $('hMWn'); a.oninput = () => bn.value = a.value; a.onchange = () => { HOME.farmMW = +a.value; update(true); }; bn.onchange = () => { HOME.farmMW = Math.max(0.1, +bn.value || 1); a.value = HOME.farmMW; update(true); }; $('hPrice').onchange = e => { HOME.price = Math.max(1, +e.target.value || 100); update(); }; }
     $('p-home').querySelectorAll('[data-bill]').forEach(inp => inp.onchange = () => {
       HOME.bills[+inp.dataset.bill] = Math.max(0, +inp.value || 0);
       const v = HOME.bills.filter(x => x > 0); HOME.kwh = v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : 10;
@@ -235,13 +284,13 @@
       $('hLocOn').textContent = L('Buscando ubicación…', 'Finding location…');
       navigator.geolocation.getCurrentPosition(p => setLoc(p.coords.latitude, p.coords.longitude), () => { alert(L('No se pudo obtener la ubicación. Revisa que el navegador tenga permiso de ubicación.', 'Could not get the location. Check that the browser has location permission.')); EXT.home(); }, { enableHighAccuracy: true, timeout: 15000 });
     };
-    $('hMod').onchange = e => { HOME.modId = +e.target.value; update(true); };
+    $('hMod').onchange = e => { HOME.modId = e.target.value === '' ? null : +e.target.value; HOME.invIdx = 'auto'; EXT.home(); };
     $('hInv').onchange = e => { HOME.invIdx = e.target.value === 'auto' ? 'auto' : +e.target.value; update(true); };
-    $('hCover').oninput = e => { $('hCoverV').textContent = Math.round(e.target.value * 100) + ' %'; };
-    $('hCover').onchange = e => { HOME.cover = +e.target.value; update(true); };
+    if ($('hCover')) $('hCover').oninput = e => { $('hCoverV').textContent = Math.round(e.target.value * 100) + ' %'; };
+    if ($('hCover')) $('hCover').onchange = e => { HOME.cover = +e.target.value; update(true); };
     $('hTilt').onchange = e => { HOME.tilt = Math.max(0, Math.min(45, +e.target.value)); update(true); };
     $('hAz').onchange = e => { HOME.az = Math.max(90, Math.min(270, +e.target.value)); update(true); };
-    $('hCost').onchange = e => { HOME.cost[isRes() ? 'res' : 'com'] = +e.target.value; update(); };
+    $('hCost').onchange = e => { HOME.cost[HOME.kind] = +e.target.value; update(); };
     $('hFx').onchange = e => { HOME.fx = +e.target.value; update(); };
     $('hHour').oninput = e => { stop(); HOME.hour = +e.target.value; sunUpdate(); };
     $('hMonth').onchange = e => { HOME.month = +e.target.value; sunUpdate(); };
@@ -266,6 +315,7 @@
     if (!$('hK')) return;
     const c = compute(), kpi = A().kpi;
     const cover = c.tot.pv / c.Eyear;
+    if (c.farm) { updateFarm(c, rebuild); return; }
     $('hK').innerHTML = kpi(L('Paneles recomendados', 'Recommended panels'), c.n, '', 'hl') + kpi(L('Potencia instalada', 'Installed power'), fx(c.kWp, 2), 'kWp') + kpi(L('Producción anual', 'Annual production'), fx(c.tot.pv, 0), 'kWh') + kpi(L('Cubre tu consumo', 'Covers your consumption'), fx(cover * 100, 0), '%') + kpi(L('Ahorro anual', 'Annual savings'), 'L ' + fx(c.save, 0), '', 'ok') + kpi(L('Inversión estimada', 'Estimated investment'), 'L ' + fx(c.costHNL, 0)) + kpi(L('Retorno', 'Payback'), fx(c.payback, 1), L('años', 'years')) + kpi(L('Área de paneles', 'Panel area'), fx(c.area, 0), 'm²');
     const inv = c.inv;
     $('hSys').innerHTML = `<div class="kv"><span>${L('Panel', 'Panel')}</span><span>${c.m.Pstc.toFixed(0)} W · ${c.m.Ns} ${L('celdas', 'cells')}</span><span>${L('Inversor', 'Inverter')}${c.auto ? ' <small style="color:var(--muted)">(' + L('automático', 'automatic') + ')</small>' : ''}</span><span>${c.nInv} × ${A().esc(inv.name.split(' (')[0])}</span><span>${L('Potencia CA', 'AC power')}</span><span>${fx(c.kWac, 2)} kW</span><span>${L('Relación CC/CA', 'DC/AC ratio')}</span><span>${fx(c.dcac, 2)}</span>
@@ -290,11 +340,11 @@
     const btnMicro = c.inv.type !== 'micro' ? `<button class="btn sm" data-fix="micro">${L('Probar con microinversores', 'Try microinverters')}</button>` : '';
     const e = c.strErr;
     if (e && e.why === 'few') items.push(['bad', L('Este inversor es demasiado grande para tu sistema', 'This inverter is too large for your system'), L(`Necesita al menos ${e.sMin} paneles conectados en fila (en serie) para poder encender, y tu diseño tiene ${c.n}. Elige un inversor más pequeño o microinversores, que funcionan con cualquier número de paneles.`, `It needs at least ${e.sMin} panels connected in a row (in series) to switch on, and your design has ${c.n}. Choose a smaller inverter or microinverters, which work with any number of panels.`), btnAuto + btnMicro]);
-    else if (e && e.why === 'range') items.push(['bad', L('El panel y el inversor no son compatibles', 'The panel and the inverter are not compatible'), L(`Con este panel, el voltaje de los paneles en fila queda fuera del rango en que trabaja el inversor (de ${fx(c.inv.Vmin, 0)} a ${fx(c.inv.Vdcmax, 0)} V). Cambia de inversor o prueba otro tipo de panel.`, `With this panel, the voltage of the panels in a row falls outside the inverter operating range (${fx(c.inv.Vmin, 0)} to ${fx(c.inv.Vdcmax, 0)} V). Change the inverter or try another panel type.`), btnAuto + `<button class="btn sm" data-fix="cells">${L(`Cambiar a paneles de ${HOME.cells === 72 ? 60 : 72} celdas`, `Switch to ${HOME.cells === 72 ? 60 : 72}-cell panels`)}</button>`]);
+    else if (e && e.why === 'range') items.push(['bad', L('El panel y el inversor no son compatibles', 'The panel and the inverter are not compatible'), L(`Con este panel, el voltaje de los paneles en fila queda fuera del rango en que trabaja el inversor (de ${fx(c.inv.Vmin, 0)} a ${fx(c.inv.Vdcmax, 0)} V). Cambia de inversor o prueba otro tipo de panel.`, `With this panel, the voltage of the panels in a row falls outside the inverter operating range (${fx(c.inv.Vmin, 0)} to ${fx(c.inv.Vdcmax, 0)} V). Change the inverter or try another panel type.`), btnAuto + `<button class="btn sm" data-fix="cells">${L('Probar otro formato de panel', 'Try another panel format')}</button>`]);
     else if (e && e.why === 'many') items.push(['bad', L('No se logra una conexión equilibrada de los paneles', 'The panels cannot be connected evenly'), L('Con este inversor no se pueden repartir los paneles en filas iguales sin pasarte del límite legal de producción. El inversor recomendado lo resuelve.', 'With this inverter the panels cannot be split into equal rows without exceeding the legal production limit. The recommended inverter solves it.'), btnAuto + btnMicro]);
     if (c.batt) items.push(['warn', L('Este equipo es para sistemas con baterías', 'This device is for battery systems'), L('Es un inversor-cargador: no se conecta directamente a los paneles, necesita además un controlador de carga solar. Para un sistema conectado a la red, usa un inversor de red.', 'It is an inverter-charger: it does not connect directly to the panels and also needs a solar charge controller. For a grid-tied system, use a grid inverter.'), btnAuto]);
     if (!e && c.dcac > 1.35) items.push(['warn', L('Tienes más paneles de los que el inversor puede aprovechar', 'You have more panels than the inverter can use'), L('En las horas de más sol el inversor limitará la potencia y se perderá algo de energía. Un inversor un poco más grande lo evita.', 'At peak sun hours the inverter will limit power and some energy will be lost. A slightly larger inverter avoids it.'), btnAuto]);
-    if (!e && c.dcac < 0.8 && c.inv.type === 'micro' && c.m.Pstc < 250) items.push(['warn', L('Tus paneles son pequeños para un microinversor', 'Your panels are small for a microinverter'), L(`Cada microinversor puede manejar unos ${fx(c.inv.Paco, 0)} W, pero cada panel solo da ${fx(c.m.Pstc, 0)} W. Con paneles de 60 o 72 celdas aprovecharás mejor cada equipo y cubrirás más consumo.`, `Each microinverter can handle about ${fx(c.inv.Paco, 0)} W, but each panel only gives ${fx(c.m.Pstc, 0)} W. With 60- or 72-cell panels you will make better use of each device and cover more consumption.`), `<button class="btn sm pri" data-fix="cells60">${L('Cambiar a paneles de 60 celdas', 'Switch to 60-cell panels')}</button>`]);
+    if (!e && c.dcac < 0.8 && c.inv.type === 'micro' && c.m.Pstc < 250) items.push(['warn', L('Tus paneles son pequeños para un microinversor', 'Your panels are small for a microinverter'), L(`Cada microinversor puede manejar unos ${fx(c.inv.Paco, 0)} W, pero cada panel solo da ${fx(c.m.Pstc, 0)} W. Con un panel residencial actual (≈ 440 W) aprovecharás mejor cada equipo y cubrirás más consumo.`, `Each microinverter can handle about ${fx(c.inv.Paco, 0)} W, but each panel only gives ${fx(c.m.Pstc, 0)} W. With a current residential panel (≈ 440 W) you will make better use of each device and cover more consumption.`), `<button class="btn sm pri" data-fix="cells60">${L('Usar el panel residencial recomendado', 'Use the recommended residential panel')}</button>`]);
     else if (!e && c.dcac < 0.8) items.push(['warn', L('El inversor es más grande de lo necesario', 'The inverter is larger than needed'), L('Funcionará, pero pagarás de más y trabajará con menor eficiencia. Te conviene uno más pequeño.', 'It will work, but you will overpay and it will run at lower efficiency. A smaller one suits you better.'), btnAuto]);
     if (c.kWac > c.dmax + 1e-9) items.push(['bad', L('El inversor supera tu demanda máxima', 'The inverter exceeds your maximum demand'), L(`La ley (Art. 47) no permite instalar más potencia que tu demanda máxima (${fx(c.dmax, 1)} kW). Si conoces tu demanda real (aparece en recibos comerciales), escríbela en la pregunta 2; si no, usa el inversor recomendado.`, `The law (Art. 47) does not allow installing more power than your maximum demand (${fx(c.dmax, 1)} kW). If you know your real demand (shown on commercial bills), enter it in question 2; otherwise use the recommended inverter.`), btnAuto + btnMicro]);
     if (c.cappedDem) items.push(['info', L('Ajustamos el sistema a tu demanda máxima', 'We sized the system to your maximum demand'), L(`La ley no permite instalar más potencia que tu demanda máxima (${fx(c.dmax, 1)} kW${HOME.dmax > 0 ? '' : ', estimada'}). Por eso el sistema cubre ${fx(c.tot.pv / c.Eyear * 100, 0)} % de tu consumo. Si tu demanda real es mayor, escríbela en la pregunta 2.`, `The law does not allow installing more power than your maximum demand (${fx(c.dmax, 1)} kW${HOME.dmax > 0 ? '' : ', estimated'}). That is why the system covers ${fx(c.tot.pv / c.Eyear * 100, 0)} % of your consumption. If your real demand is higher, enter it in question 2.`), '']);
@@ -305,9 +355,22 @@
   function fix(k) {
     if (k === 'auto') HOME.invIdx = 'auto';
     if (k === 'micro') HOME.invIdx = window.INVERTERS_GRID.findIndex(v => v.type === 'micro');
-    if (k === 'cells') { HOME.cells = HOME.cells === 72 ? 60 : 72; HOME.modId = modsByCells(HOME.cells)[0].i; }
-    if (k === 'cells60') { HOME.cells = 60; HOME.modId = modsByCells(60)[0].i; HOME.invIdx = 'auto'; }
+    if (k === 'cells') { HOME.fmt = HOME.fmt === 'res' ? 'com' : 'res'; HOME.modId = null; }
+    if (k === 'cells60') { HOME.fmt = 'res'; HOME.modId = null; HOME.invIdx = 'auto'; }
     EXT.home();
+  }
+
+  function updateFarm(c, rebuild) {
+    const kpi = A().kpi, css = A().css;
+    $('hK').innerHTML = kpi(L('Paneles', 'Panels'), fx(c.n, 0), '', 'hl') + kpi(L('Potencia', 'Power'), fx(c.kWp / 1000, 2), 'MWp') + kpi(L('Potencia CA', 'AC power'), fx(c.kWac / 1000, 2), 'MWac') + kpi(L('Energía anual', 'Annual energy'), fx(c.E / 1000, 0), 'MWh') + kpi(L('Factor de planta', 'Capacity factor'), fx(c.CF * 100, 1), '%') + kpi(L('Ingresos anuales', 'Annual revenue'), 'USD ' + fx(c.revUSD / 1e6, 2) + ' M', '', 'ok') + kpi(L('Inversión estimada', 'Estimated investment'), 'USD ' + fx(c.invUSD / 1e6, 2) + ' M') + kpi(L('Retorno simple', 'Simple payback'), fx(c.payback, 1), L('años', 'years')) + kpi(L('Terreno', 'Land'), fx(c.landHa, 1), 'ha');
+    $('hSys').innerHTML = `<div class="kv"><span>${L('Panel', 'Panel')}</span><span>${c.m.Pstc} W${c.m.bifacial ? ' ' + L('bifacial', 'bifacial') : ''}</span><span>${L('Inversores', 'Inverters')}${c.auto ? ' <small style="color:var(--muted)">(' + L('automático', 'automatic') + ')</small>' : ''}</span><span>${c.nInv} × ${A().esc(c.inv.name.split(' (')[0])}</span><span>${L('Relación CC/CA', 'DC/AC ratio')}</span><span>${fx(c.dcac, 2)}</span>${c.strings ? `<span>${L('Configuración', 'Configuration')}</span><span>${c.strings.ns} × ${c.strings.s} ${L('paneles por inversor', 'panels per inverter')}</span>` : ''}<span>${L('Producción específica', 'Specific yield')}</span><span>${fx(c.E / c.kWp, 0)} kWh/kWp</span><span>${L('Ganancia bifacial supuesta', 'Assumed bifacial gain')}</span><span>${fx((c.bif - 1) * 100, 0)} %</span><span>${L('Ingresos', 'Revenue')}</span><span>L ${fx(c.revUSD * HOME.fx / 1e6, 1)} M/${L('año', 'yr')}</span></div>
+      <p class="note">${L('Mesas fijas de 2 paneles en vertical, separación para un 42 % de ocupación del suelo, conexión a media tensión con subestación elevadora. Ingresos sin costos de operación, impuestos ni financiamiento.', 'Fixed 2-in-portrait tables, spacing for 42 % ground coverage, medium-voltage connection with step-up substation. Revenue excludes operating costs, taxes and financing.')}</p>${advice(c)}`;
+    $('hSys').querySelectorAll('[data-fix]').forEach(b => b.onclick = () => fix(b.dataset.fix));
+    $('hLaw').innerHTML = `<p class="note" style="margin-top:0">${L('Un parque solar es una empresa generadora: se registra ante la CREE y vende su energía por contratos o en el mercado eléctrico.', 'A solar park is a generating company: it registers with CREE and sells its energy through contracts or the electricity market.')}</p>`;
+    const months = L('Ene Feb Mar Abr May Jun Jul Ago Sep Oct Nov Dic', 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec').split(' '), xs = months.map((_, i) => i + 1);
+    window.CHART.draw($('hMonC'), { xs, xmin: 0.5, xmax: 12.5, xticks: xs.map((x, i) => ({ x, label: months[i] })), series: [{ type: 'bar', ys: c.mon.map(x => x.pv / 1000), color: css('--s4'), bw: 0.6, label: L('Energía generada (MWh)', 'Energy generated (MWh)') }], xl: '', yl: 'MWh', ymaxL: Math.max(...c.mon.map(x => x.pv / 1000)) * 1.1 });
+    if (rebuild && scene) build3d();
+    sunUpdate();
   }
 
   /* ---------- 3D ---------- */
@@ -319,9 +382,9 @@
   }
   function build3d() {
     if (!scene || !calc) return;
-    const m = calc.m, ratio = m.Ns === 36 ? 0.67 / 1.48 : m.Ns === 60 ? 0.99 / 1.65 : 0.99 / 1.96;
-    const ph = Math.sqrt(m.A / ratio), pw = m.A / ph;
-    scene.build({ kind: HOME.kind, n: Math.min(calc.n, 1500), mod: { pw, ph }, tilt: HOME.tilt, az: HOME.az });
+    const m = calc.m; let pw, ph;
+    if (m.typical) { pw = m.W; ph = m.H; } else { const ratio = m.Ns === 36 ? 0.67 / 1.48 : m.Ns === 60 ? 0.99 / 1.65 : 0.99 / 1.96; ph = Math.sqrt(m.A / ratio); pw = m.A / ph; }
+    scene.build({ kind: HOME.kind, n: Math.min(calc.n, HOME.kind === 'farm' ? 5000 : 1500), mod: { pw, ph }, tilt: HOME.tilt, az: HOME.az });
   }
   function sunUpdate() {
     if (!calc) return;
@@ -340,7 +403,7 @@
     if (scene) scene.setSun(sp.az, sp.el, path, Pac / Math.max(calc.kWac, 0.001), cloud);
     const hh = h => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60) % 60).padStart(2, '0')}`;
     const city = HOME.loc ? L('Mi ubicación', 'My location') : A().CITIES[S.site.city] ? A().CITIES[S.site.city].name : '';
-    const hud = $('hud'); if (hud) hud.innerHTML = `<b>${city}</b><span>${hh(HOME.hour)} · ${$('hMonth') ? $('hMonth').selectedOptions[0].text : ''}</span><span class="big">${fx(Pac, 2)} kW</span><span>${L('producción típica a esta hora', 'typical output at this hour')}</span><span>${sp.el > 0 ? L(`Sol a ${fx(sp.el, 0)}° de altura`, `Sun ${fx(sp.el, 0)}° high`) : L('Noche', 'Night')} · ${L('nubosidad típica', 'typical cloudiness')} ${fx(cloud * 100, 0)} %</span>`;
+    const hud = $('hud'); if (hud) hud.innerHTML = `<b>${city}</b><span>${hh(HOME.hour)} · ${$('hMonth') ? $('hMonth').selectedOptions[0].text : ''}</span><span class="big">${Pac >= 1000 ? fx(Pac / 1000, 2) + ' MW' : fx(Pac, 2) + ' kW'}</span><span>${L('producción típica a esta hora', 'typical output at this hour')}</span><span>${sp.el > 0 ? L(`Sol a ${fx(sp.el, 0)}° de altura`, `Sun ${fx(sp.el, 0)}° high`) : L('Noche', 'Night')} · ${L('nubosidad típica', 'typical cloudiness')} ${fx(cloud * 100, 0)} %</span>`;
   }
 
   /* ---------- Llevar el diseño al simulador detallado ---------- */
