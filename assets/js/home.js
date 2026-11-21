@@ -235,6 +235,7 @@
         </div>
       </div>
       <div class="kpis big" id="hK" style="margin-top:24px"></div>
+      <div class="card" style="margin-top:24px"><h3 style="margin-bottom:16px">${L('Flujo de energía en un año', 'Energy flow over a year')}</h3><div class="flowicons" id="hFlow"></div></div>
       <div class="grid g-3" style="margin-top:24px">
         <div class="card"><h3>${L('Tu sistema', 'Your system')}</h3><div id="hSys"></div>
           <details style="margin-top:14px"><summary>${L('Ajustes de instalación y costos', 'Installation and cost settings')}</summary>
@@ -316,6 +317,7 @@
     if (!$('hK')) return;
     const c = compute(), kpi = A().kpi;
     const cover = c.tot.pv / c.Eyear;
+    drawFlow(c);
     if (c.farm) { updateFarm(c, rebuild); return; }
     $('hK').innerHTML = kpi(L('Paneles recomendados', 'Recommended panels'), c.n, '', 'hl') + kpi(L('Potencia instalada', 'Installed power'), fx(c.kWp, 2), 'kWp') + kpi(L('Producción anual', 'Annual production'), fx(c.tot.pv, 0), 'kWh') + kpi(L('Cubre tu consumo', 'Covers your consumption'), fx(cover * 100, 0), '%') + kpi(L('Ahorro anual', 'Annual savings'), 'L ' + fx(c.save, 0), '', 'ok') + kpi(L('Inversión estimada', 'Estimated investment'), 'L ' + fx(c.costHNL, 0)) + kpi(L('Retorno', 'Payback'), fx(c.payback, 1), L('años', 'years')) + kpi(L('Área de paneles', 'Panel area'), fx(c.area, 0), 'm²');
     const inv = c.inv;
@@ -324,7 +326,6 @@
       <span>${L('Producción específica', 'Specific yield')}</span><span>${fx(c.tot.pv / c.kWp, 0)} kWh/kWp</span><span>${L('Factura actual', 'Current bill')}</span><span>L ${fx(c.b0 / 12, 0)}/${L('mes', 'mo')}</span><span>${L('Factura con paneles', 'Bill with panels')}</span><span>L ${fx(Math.max(0, c.b1 - c.credit) / 12, 0)}/${L('mes', 'mo')}</span><span>${L('Excedentes vendidos', 'Surplus sold')}</span><span>${fx(c.tot.exp, 0)} kWh/${L('año', 'yr')}</span></div>
       ${advice(c)}
       ${c.opt ? `<p class="note">${L('SolarEdge usa optimizadores por panel; la tensión del string la fija el inversor.', 'SolarEdge uses per-panel optimizers; the inverter sets the string voltage.')}</p>` : ''}
-      ${c.capped ? `<div class="alert warn">${L('Se limitó el número de paneles para que la producción anual sea menor que tu consumo, como exige el Art. 47 del reglamento.', 'The number of panels was limited so annual production stays below your consumption, as required by Art. 47 of the regulation.')}</div>` : ''}`;
     const lw = lawChecks(c).filter(x => !x.info), okN = lw.filter(x => x.ok).length;
     $('hSys').querySelectorAll('[data-fix]').forEach(b => b.onclick = () => fix(b.dataset.fix));
     $('hLaw').innerHTML = `<div class="kpis">${kpi(L('Requisitos legales', 'Legal requirements'), okN + ' / ' + lw.length, L('cumplidos', 'met'), okN === lw.length ? 'ok' : 'bad')}</div><p class="note">${L('Revisión del Reglamento de la Ley General de la Industria Eléctrica (Art. 47–50), protecciones, conductores, montaje en 3D y diagrama unifilar con las marcas sugeridas.', 'Review of the General Electricity Industry Law Regulation (Art. 47–50), protections, conductors, 3D installation and single-line diagram with suggested brands.')}</p>`;
@@ -344,7 +345,7 @@
     else if (e && e.why === 'range') items.push(['bad', L('El panel y el inversor no son compatibles', 'The panel and the inverter are not compatible'), L(`Con este panel, el voltaje de los paneles en fila queda fuera del rango en que trabaja el inversor (de ${fx(c.inv.Vmin, 0)} a ${fx(c.inv.Vdcmax, 0)} V). Cambia de inversor o prueba otro tipo de panel.`, `With this panel, the voltage of the panels in a row falls outside the inverter operating range (${fx(c.inv.Vmin, 0)} to ${fx(c.inv.Vdcmax, 0)} V). Change the inverter or try another panel type.`), btnAuto + `<button class="btn sm" data-fix="cells">${L('Probar otro formato de panel', 'Try another panel format')}</button>`]);
     else if (e && e.why === 'many') items.push(['bad', L('No se logra una conexión equilibrada de los paneles', 'The panels cannot be connected evenly'), L('Con este inversor no se pueden repartir los paneles en filas iguales sin pasarte del límite legal de producción. El inversor recomendado lo resuelve.', 'With this inverter the panels cannot be split into equal rows without exceeding the legal production limit. The recommended inverter solves it.'), btnAuto + btnMicro]);
     if (c.batt) items.push(['warn', L('Este equipo es para sistemas con baterías', 'This device is for battery systems'), L('Es un inversor-cargador: no se conecta directamente a los paneles, necesita además un controlador de carga solar. Para un sistema conectado a la red, usa un inversor de red.', 'It is an inverter-charger: it does not connect directly to the panels and also needs a solar charge controller. For a grid-tied system, use a grid inverter.'), btnAuto]);
-    if (!e && c.dcac > 1.35) items.push(['warn', L('Tienes más paneles de los que el inversor puede aprovechar', 'You have more panels than the inverter can use'), L('En las horas de más sol el inversor limitará la potencia y se perderá algo de energía. Un inversor un poco más grande lo evita.', 'At peak sun hours the inverter will limit power and some energy will be lost. A slightly larger inverter avoids it.'), btnAuto]);
+    if (!e && c.dcac > (c.inv.type === 'micro' ? 1.6 : 1.35)) items.push(['warn', L('Tienes más paneles de los que el inversor puede aprovechar', 'You have more panels than the inverter can use'), L('En las horas de más sol el inversor limitará la potencia y se perderá algo de energía. Un inversor un poco más grande lo evita.', 'At peak sun hours the inverter will limit power and some energy will be lost. A slightly larger inverter avoids it.'), btnAuto]);
     if (!e && c.dcac < 0.8 && c.inv.type === 'micro' && c.m.Pstc < 250) items.push(['warn', L('Tus paneles son pequeños para un microinversor', 'Your panels are small for a microinverter'), L(`Cada microinversor puede manejar unos ${fx(c.inv.Paco, 0)} W, pero cada panel solo da ${fx(c.m.Pstc, 0)} W. Con un panel residencial actual (≈ 440 W) aprovecharás mejor cada equipo y cubrirás más consumo.`, `Each microinverter can handle about ${fx(c.inv.Paco, 0)} W, but each panel only gives ${fx(c.m.Pstc, 0)} W. With a current residential panel (≈ 440 W) you will make better use of each device and cover more consumption.`), `<button class="btn sm pri" data-fix="cells60">${L('Usar el panel residencial recomendado', 'Use the recommended residential panel')}</button>`]);
     else if (!e && c.dcac < 0.8) items.push(['warn', L('El inversor es más grande de lo necesario', 'The inverter is larger than needed'), L('Funcionará, pero pagarás de más y trabajará con menor eficiencia. Te conviene uno más pequeño.', 'It will work, but you will overpay and it will run at lower efficiency. A smaller one suits you better.'), btnAuto]);
     if (c.kWac > c.dmax + 1e-9) items.push(['bad', L('El inversor supera tu demanda máxima', 'The inverter exceeds your maximum demand'), L(`La ley (Art. 47) no permite instalar más potencia que tu demanda máxima (${fx(c.dmax, 1)} kW). Si conoces tu demanda real (aparece en recibos comerciales), escríbela en la pregunta 2; si no, usa el inversor recomendado.`, `The law (Art. 47) does not allow installing more power than your maximum demand (${fx(c.dmax, 1)} kW). If you know your real demand (shown on commercial bills), enter it in question 2; otherwise use the recommended inverter.`), btnAuto + btnMicro]);
@@ -361,6 +362,16 @@
     EXT.home();
   }
 
+  function drawFlow(c) {
+    const el = $('hFlow'); if (!el) return;
+    const k = v => v >= 1e6 ? fx(v / 1e6, 2) + ' GWh' : v >= 1e4 ? fx(v / 1000, 1) + ' MWh' : fx(v, 0) + ' kWh';
+    const node = (ic, t, v, sub, hot) => `<div class="fnode ${hot ? 'hot' : ''}"><div class="ic">${ic}</div><b>${t}</b><span>${v}</span><small>${sub}</small></div>`;
+    const ar = s => `<div class="farrow">${s || '→'}</div>`;
+    const eta = c.tot.pv / Math.max(1, c.Ykwp * c.kWp) * 100;
+    if (c.farm) el.innerHTML = node('☀️', L('Paneles', 'Panels'), fx(c.kWp / 1000, 2) + ' MWp', `${fx(c.n, 0)} ${L('paneles', 'panels')}`, true) + ar() + node('🔌', L('Inversores', 'Inverters'), `${c.nInv} × ${fx(c.inv.Paco / 1000, 0)} kW`, `η ${fx(eta, 1)} %`) + ar() + node('🏗️', L('Subestación', 'Substation'), fx(c.kWac / 1000, 2) + ' MWac', L('elevación a media tensión', 'step-up to medium voltage')) + ar() + node('⚡', L('Red', 'Grid'), k(c.E), L('energía vendida al año', 'energy sold per year'), true);
+    else el.innerHTML = node('☀️', L('Paneles', 'Panels'), k(c.Ykwp * c.kWp), `${c.n} × ${c.m.Pstc.toFixed(0)} W`, true) + ar() + node('🔌', L('Inversor', 'Inverter'), k(c.tot.pv), `η ${fx(eta, 1)} %`) + ar() + node(HOME.kind === 'gas' ? '⛽' : HOME.kind === 'com' ? '🏭' : HOME.kind === 'apt' ? '🏢' : '🏠', L('Consumo', 'Consumption'), k(c.tot.self), L(`autoconsumo · ${fx(c.tot.self / Math.max(1, c.tot.load) * 100, 0)} % de tu demanda`, `self-consumed · ${fx(c.tot.self / Math.max(1, c.tot.load) * 100, 0)} % of demand`)) + ar('⇄') + node('⚡', L('Red ENEE', 'ENEE grid'), `↑ ${k(c.tot.exp)}`, `↓ ${k(c.tot.imp)} ${L('comprados', 'bought')}`, true);
+  }
+  EXT.homeRedraw = () => { if (calc) update(false); };
   function updateFarm(c, rebuild) {
     const kpi = A().kpi, css = A().css;
     $('hK').innerHTML = kpi(L('Paneles', 'Panels'), fx(c.n, 0), '', 'hl') + kpi(L('Potencia', 'Power'), fx(c.kWp / 1000, 2), 'MWp') + kpi(L('Potencia CA', 'AC power'), fx(c.kWac / 1000, 2), 'MWac') + kpi(L('Energía anual', 'Annual energy'), fx(c.E / 1000, 0), 'MWh') + kpi(L('Factor de planta', 'Capacity factor'), fx(c.CF * 100, 1), '%') + kpi(L('Ingresos anuales', 'Annual revenue'), 'USD ' + fx(c.revUSD / 1e6, 2) + ' M', '', 'ok') + kpi(L('Inversión estimada', 'Estimated investment'), 'USD ' + fx(c.invUSD / 1e6, 2) + ' M') + kpi(L('Retorno simple', 'Simple payback'), fx(c.payback, 1), L('años', 'years')) + kpi(L('Terreno', 'Land'), fx(c.landHa, 1), 'ha');

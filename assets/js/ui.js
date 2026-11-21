@@ -842,6 +842,13 @@
   window.APP = { S, get LANG() { return LANG; }, L, fx, esc, css, kpi, chartBox, bindExports, go, refresh: () => refresh(), applyModule, loadTmy, useTmy, CITIES, renderSummary };
   window.addEventListener('resize', () => { if (S.tab === 'iv') { drawIV(); renderValidation(); } if (S.tab === 'sim') { drawDay(); drawYear(); } if (S.tab === 'site') drawMonthly(); if (S.tab === 'bat' || S.tab === 'conv' || S.tab === 'grid') renderPage(); });
   document.querySelectorAll('.lang button').forEach(b => b.onclick = () => setLang(b.dataset.lang));
+  const themeIcon = () => { const b = $('themeBtn'); if (b) b.textContent = document.documentElement.dataset.theme === 'light' ? '🌙' : '☀️'; };
+  themeIcon();
+  if ($('themeBtn')) $('themeBtn').onclick = () => {
+    const t = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = t; try { localStorage.setItem('theme', t); } catch (e) { }
+    themeIcon(); if (S.tab === 'home') { const ext = window.PAGES_EXT; ext.homeRedraw ? ext.homeRedraw() : renderPage(); } else renderPage();
+  };
 
   // inicio
   (() => {
