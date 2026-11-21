@@ -846,7 +846,7 @@
   themeIcon();
   if ($('themeBtn')) $('themeBtn').onclick = () => {
     const t = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
-    document.documentElement.dataset.theme = t; try { localStorage.setItem('theme', t); } catch (e) { }
+    document.documentElement.dataset.theme = t; try { localStorage.setItem('tema', t); } catch (e) { }
     themeIcon(); if (S.tab === 'home') { const ext = window.PAGES_EXT; ext.homeRedraw ? ext.homeRedraw() : renderPage(); } else renderPage();
   };
 
