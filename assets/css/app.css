@@ -1,18 +1,18 @@
 :root{
   /* Tema oscuro moderno (predeterminado) */
   --bg:#0b0b10; --surface:#141419; --surface2:#0d0d12; --ink:#ededf3; --ink2:#c9c9d6; --muted:#9696a6; --line:#26262f; --grid:#23232c; --axis:#3d3d4a;
-  --primary:#fb923c; --primary2:#fdba74; --primarySoft:rgba(251,146,60,.14); --accent:#fbbf24; --accentSoft:rgba(251,191,36,.10);
+  --primary:#f472b6; --primary2:#f9a8d4; --primarySoft:rgba(244,114,182,.14); --accent:#fbbf24; --accentSoft:rgba(251,191,36,.10);
   --ok:#34d399; --okSoft:rgba(52,211,153,.10); --warn:#fb923c; --warnSoft:rgba(251,146,60,.10); --bad:#fb7185; --badSoft:rgba(251,113,133,.10);
-  --s1:#fb923c; --s2:#fb7185; --s3:#34d399; --s4:#fbbf24; --s5:#60a5fa; --s6:#71717a;
+  --s1:#f472b6; --s2:#fb7185; --s3:#34d399; --s4:#fbbf24; --s5:#60a5fa; --s6:#71717a;
   --radius:14px; --shadow:none;
   --sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
   color-scheme:dark;
 }
 :root[data-theme="light"]{
   --bg:#f5f5f8; --surface:#ffffff; --surface2:#f7f7fb; --ink:#14141c; --ink2:#33334a; --muted:#646478; --line:#e4e4ec; --grid:#ececf2; --axis:#a5a5b5;
-  --primary:#ea580c; --primary2:#c2410c; --primarySoft:#fff1e8; --accent:#d97706; --accentSoft:#fff6e5;
+  --primary:#ec4899; --primary2:#db2777; --primarySoft:#fdf0f7; --accent:#d97706; --accentSoft:#fff6e5;
   --ok:#059669; --okSoft:#e7f7f0; --warn:#c2410c; --warnSoft:#fff1e6; --bad:#e11d48; --badSoft:#fdecef;
-  --s1:#ea580c; --s2:#be185d; --s3:#059669; --s4:#ca8a04; --s5:#2563eb; --s6:#9494a3;
+  --s1:#ec4899; --s2:#8b5cf6; --s3:#059669; --s4:#ca8a04; --s5:#2563eb; --s6:#9494a3;
   --shadow:0 1px 2px rgba(20,20,40,.04),0 4px 14px rgba(20,20,40,.05);
   color-scheme:light;
 }
@@ -237,9 +237,9 @@ details summary{cursor:pointer;font-weight:600;color:var(--primary);font-size:14
 @media print{.nav,.lang,.tools,.btn{display:none!important}.page{display:block!important;break-after:page}body{background:#fff}}
 
 /* =================== Estilo moderno =================== */
-.top{background:radial-gradient(900px 260px at 12% -40%,rgba(249,115,22,.32),transparent 70%),radial-gradient(700px 240px at 95% -60%,rgba(251,191,36,.18),transparent 70%),var(--bg);color:var(--ink);border-bottom:1px solid var(--line)}
+.top{background:radial-gradient(900px 260px at 12% -40%,rgba(236,72,153,.30),transparent 70%),radial-gradient(700px 240px at 95% -60%,rgba(251,191,36,.18),transparent 70%),var(--bg);color:var(--ink);border-bottom:1px solid var(--line)}
 .top .brand h1{color:var(--ink)}.top .brand p{color:var(--muted)}
-.logo{background:linear-gradient(135deg,#f59e0b 0%,#f97316 40%,#ec4899 100%);box-shadow:0 6px 20px rgba(249,115,22,.32)}
+.logo{background:linear-gradient(135deg,#ffb3d9 0%,#f472b6 45%,#c084fc 100%);box-shadow:0 6px 20px rgba(236,72,153,.30)}
 .lang{border-color:var(--line)}.lang button{color:var(--muted)}.lang button.on{background:var(--primary);color:#fff}
 .themebtn{border:1px solid var(--line);background:var(--surface);color:var(--ink2);border-radius:8px;width:38px;height:34px;cursor:pointer;font-size:16px;flex:none}
 .themebtn:hover{border-color:var(--primary)}
@@ -264,7 +264,7 @@ input[type=range]{accent-color:var(--primary);height:22px}
 /* botones y controles */
 .btn{background:var(--surface2);border-color:var(--line);color:var(--ink2);border-radius:9px}
 .btn:hover{border-color:var(--primary);color:var(--primary2)}
-.btn.pri{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 4px 14px rgba(236,72,153,.22)}
+.btn.pri{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 4px 14px rgba(236,72,153,.25)}
 .btn.pri:hover{background:var(--primary2);border-color:var(--primary2);color:#fff}
 .btn.on{background:var(--primarySoft);border-color:var(--primary);color:var(--primary2)}
 .seg{background:var(--surface2);border-color:var(--line);border-radius:10px;padding:3px;gap:3px}
@@ -288,7 +288,7 @@ table.t td,table.t th{border-color:var(--line)}
 .opt,.blk{background:var(--surface2);border-color:var(--line)}
 .opt.on{border-color:var(--primary);box-shadow:0 0 0 3px var(--primarySoft)}
 .blk b{color:var(--primary2)}
-.qn{background:linear-gradient(135deg,#f59e0b 0%,#f97316 40%,#ec4899 100%)}
+.qn{background:linear-gradient(135deg,#ffb3d9 0%,#f472b6 45%,#c084fc 100%)}
 .kinds button{background:var(--surface2);border-color:var(--line)}
 .kinds button.on{background:var(--primarySoft);border-color:var(--primary);color:var(--primary2)}
 .hctl{background:var(--surface);border-top-color:var(--line)}
@@ -328,10 +328,10 @@ footer{border-color:var(--line)}
 .kv span:nth-child(even){font-family:var(--sans);font-size:14.5px;font-weight:500}
 
 /* ---------- acento tornasol de atardecer ---------- */
-.btn.pri,.seg button.on,.tab.on .n,.lang button.on{background:linear-gradient(135deg,#f59e0b 0%,#f97316 40%,#ec4899 100%);border-color:transparent;color:#fff}
-.btn.pri:hover{background:linear-gradient(135deg,#f97316 0%,#ec4899 70%,#a855f7 100%);border-color:transparent}
-.intro h2::after{background:linear-gradient(90deg,#f59e0b,#f97316,#ec4899,#a855f7)}
-.tab.on{background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(236,72,153,.12));border-color:rgba(249,115,22,.45)}
-.top{background:radial-gradient(900px 260px at 10% -40%,rgba(249,115,22,.30),transparent 70%),radial-gradient(800px 260px at 60% -70%,rgba(236,72,153,.22),transparent 70%),radial-gradient(700px 240px at 98% -60%,rgba(168,85,247,.16),transparent 70%),var(--bg)}
-input[type=range]{accent-color:#f97316}
-.fnode.hot .ic{border-color:#f97316}
+.btn.pri,.seg button.on,.tab.on .n,.lang button.on{background:linear-gradient(135deg,#ffb3d9 0%,#f472b6 45%,#c084fc 100%);border-color:transparent;color:#fff}
+.btn.pri:hover{background:linear-gradient(135deg,#f9a8d4 0%,#ec4899 55%,#a78bfa 100%);border-color:transparent}
+.intro h2::after{background:linear-gradient(90deg,#fbcfe8,#f472b6,#c084fc,#93c5fd)}
+.tab.on{background:linear-gradient(135deg,rgba(244,114,182,.14),rgba(192,132,252,.14));border-color:rgba(236,72,153,.45)}
+.top{background:radial-gradient(900px 260px at 10% -40%,rgba(244,114,182,.32),transparent 70%),radial-gradient(800px 260px at 60% -70%,rgba(192,132,252,.22),transparent 70%),radial-gradient(700px 240px at 98% -60%,rgba(147,197,253,.22),transparent 70%),var(--bg)}
+input[type=range]{accent-color:#ec4899}
+.fnode.hot .ic{border-color:#f472b6}
