@@ -14,7 +14,11 @@
     g.fillStyle = css('--surface') || '#fff'; g.fillRect(0, 0, W, H);
     const font = "13px Inter, system-ui, sans-serif", small = "12px Inter, system-ui, sans-serif";
     const hasLegend = o.series.some(s => s.label);
-    const Lm = 60, Rm = o.yr ? 62 : 22, Tm = hasLegend ? 40 : 16, Bm = 46, pw = W - Lm - Rm, ph = H - Tm - Bm;
+    const Lm = 60, Rm = o.yr ? 62 : 22, Tm = hasLegend ? 40 : 16;
+    // Etiquetas del eje x: si no caben horizontales con espacio, se inclinan para que no queden pegadas
+    let rot = false;
+    if (o.xticks && o.xticks.length > 1) { g.font = small; const wMax = Math.max(...o.xticks.map(t => g.measureText(t.label).width)); rot = (W - Lm - Rm) / o.xticks.length < wMax + 14; }
+    const Bm = rot ? 56 : 46, pw = W - Lm - Rm, ph = H - Tm - Bm;
     const xmin = o.xmin ?? 0, xmax = o.xmax ?? (Math.max(...o.xs) || 1);
     const lo = o.yminL || 0, hiL = Math.max(o.ymaxL || 1, lo + 1e-9), stL = nice((hiL - lo) / 5), nd = Math.max(2, Math.ceil((hiL - lo) / stL - 1e-9));
     const yl = { l: lo + nd * stL, r: nice((o.ymaxR || 1) / nd) * nd }, y0 = { l: lo, r: 0 };
@@ -27,7 +31,7 @@
       if (o.yr) { g.textAlign = 'left'; g.fillText(fmt(+(yl.r * (1 - i / nd)).toPrecision(6)), Lm + pw + 8, y + 4); }
     }
     g.textAlign = 'center';
-    if (o.xticks) for (const t of o.xticks) { g.strokeStyle = grid; g.beginPath(); g.moveTo(X(t.x), Tm); g.lineTo(X(t.x), Tm + ph); g.stroke(); g.fillStyle = mut; g.fillText(t.label, X(t.x), Tm + ph + 18); }
+    if (o.xticks) for (const t of o.xticks) { g.strokeStyle = grid; g.beginPath(); g.moveTo(X(t.x), Tm); g.lineTo(X(t.x), Tm + ph); g.stroke(); g.fillStyle = mut; if (rot) { g.save(); g.translate(X(t.x) + 4, Tm + ph + 12); g.rotate(-Math.PI / 4); g.textAlign = 'right'; g.fillText(t.label, 0, 0); g.restore(); g.textAlign = 'center'; } else g.fillText(t.label, X(t.x), Tm + ph + 18); }
     else { const xs = o.xstep || nice((xmax - xmin) / 7); for (let x = Math.ceil(xmin / xs) * xs; x <= xmax + 1e-9; x += xs) { g.strokeStyle = grid; g.beginPath(); g.moveTo(X(x), Tm); g.lineTo(X(x), Tm + ph); g.stroke(); g.fillStyle = mut; g.fillText(fmt(+x.toFixed(6)), X(x), Tm + ph + 18); } }
     g.strokeStyle = axis; g.strokeRect(Lm + .5, Tm + .5, pw, ph);
     g.font = font; g.fillStyle = ink; g.fillText(o.xl || '', Lm + pw / 2, H - 8);

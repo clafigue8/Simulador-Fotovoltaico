@@ -349,9 +349,7 @@
     const lw = lawChecks(c).filter(x => !x.info), okN = lw.filter(x => x.ok).length;
     $('hSys').querySelectorAll('[data-fix]').forEach(b => b.onclick = () => fix(b.dataset.fix));
     $('hLaw').innerHTML = `<div class="kpis">${kpi(L('Requisitos legales', 'Legal requirements'), okN + ' / ' + lw.length, L('cumplidos', 'met'), okN === lw.length ? 'ok' : 'bad')}</div><p class="note">${L('Revisión del Reglamento de la Ley General de la Industria Eléctrica (Art. 47–50), protecciones, conductores, montaje en 3D y diagrama unifilar con las marcas sugeridas.', 'Review of the General Electricity Industry Law Regulation (Art. 47–50), protections, conductors, 3D installation and single-line diagram with suggested brands.')}</p>`;
-    // En pantallas angostas: inicial del mes para que las etiquetas no se amontonen
-    const narrow = ($('hMonC') && $('hMonC').clientWidth || 600) < 520;
-    const months = (narrow ? L('E F M A M J J A S O N D', 'J F M A M J J A S O N D') : L('Ene Feb Mar Abr May Jun Jul Ago Sep Oct Nov Dic', 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec')).split(' '), xs = months.map((_, i) => i + 1), css = A().css;
+    const months = L('Ene Feb Mar Abr May Jun Jul Ago Sep Oct Nov Dic', 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec').split(' '), xs = months.map((_, i) => i + 1), css = A().css;
     window.CHART.draw($('hMonC'), { xs, xmin: 0.5, xmax: 12.5, xticks: xs.map((x, i) => ({ x, label: months[i] })), series: [{ type: 'bar', ys: c.mon.map(x => x.load), color: css('--s6'), bw: 0.27, off: -0.15, label: L('Consumo', 'Consumption') }, { type: 'bar', ys: c.mon.map(x => x.pv), color: css('--s4'), bw: 0.27, off: 0.15, label: L('Producción solar', 'Solar production') }], xl: '', yl: 'kWh', ymaxL: Math.max(...c.mon.map(x => Math.max(x.load, x.pv))) * 1.1 });
     if (rebuild && scene) build3d();
     sunUpdate();
@@ -401,8 +399,7 @@
       <p class="note">${L('Mesas fijas de 2 paneles en vertical, separación para un 42 % de ocupación del suelo, conexión a media tensión con subestación elevadora. Ingresos sin costos de operación, impuestos ni financiamiento.', 'Fixed 2-in-portrait tables, spacing for 42 % ground coverage, medium-voltage connection with step-up substation. Revenue excludes operating costs, taxes and financing.')}</p>${advice(c)}`;
     $('hSys').querySelectorAll('[data-fix]').forEach(b => b.onclick = () => fix(b.dataset.fix));
     $('hLaw').innerHTML = `<p class="note" style="margin-top:0">${L('Un parque solar es una empresa generadora: se registra ante la CREE y vende su energía por contratos o en el mercado eléctrico.', 'A solar park is a generating company: it registers with CREE and sells its energy through contracts or the electricity market.')}</p>`;
-    const narrow = ($('hMonC') && $('hMonC').clientWidth || 600) < 520;
-    const months = (narrow ? L('E F M A M J J A S O N D', 'J F M A M J J A S O N D') : L('Ene Feb Mar Abr May Jun Jul Ago Sep Oct Nov Dic', 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec')).split(' '), xs = months.map((_, i) => i + 1);
+    const months = L('Ene Feb Mar Abr May Jun Jul Ago Sep Oct Nov Dic', 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec').split(' '), xs = months.map((_, i) => i + 1);
     window.CHART.draw($('hMonC'), { xs, xmin: 0.5, xmax: 12.5, xticks: xs.map((x, i) => ({ x, label: months[i] })), series: [{ type: 'bar', ys: c.mon.map(x => x.pv / 1000), color: css('--s4'), bw: 0.5, label: L('Energía generada (MWh)', 'Energy generated (MWh)') }], xl: '', yl: 'MWh', ymaxL: Math.max(...c.mon.map(x => x.pv / 1000)) * 1.1 });
     if (rebuild && scene) build3d();
     sunUpdate();
