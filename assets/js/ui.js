@@ -104,10 +104,13 @@
   function renderTabs() {
     $('tabs').innerHTML = TABS.map(([k, es, en], i) => `<button class="tab ${S.tab === k ? 'on' : ''}" data-tab="${k}"><span class="n">${i + 1}</span>${L(es, en)}</button>`).join('');
     $('tabs').querySelectorAll('.tab').forEach(b => b.onclick = () => go(b.dataset.tab));
+    const cur = TABS.find(t => t[0] === S.tab); if ($('curTab') && cur) $('curTab').textContent = L(cur[1], cur[2]);
     document.querySelectorAll('.page').forEach(p => p.classList.toggle('on', p.id === 'p-' + S.tab));
     document.querySelector('.summary').style.display = ['home', 'grid', 'install', 'mount', 'class'].includes(S.tab) ? 'none' : '';
   }
-  function go(tab) { S.tab = tab; try { history.replaceState(null, '', '#' + tab + (LANG === 'en' ? '?lang=en' : '')); } catch (e) { } renderTabs(); renderPage(); window.scrollTo({ top: 0 }); }
+  function menu(open) { document.body.classList.toggle('menu-open', open); const b = $('menuBtn'); if (b) b.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+  if ($('menuBtn')) { $('menuBtn').onclick = () => menu(!document.body.classList.contains('menu-open')); $('scrim').onclick = () => menu(false); document.addEventListener('keydown', e => { if (e.key === 'Escape') menu(false); }); }
+  function go(tab) { menu(false); S.tab = tab; try { history.replaceState(null, '', '#' + tab + (LANG === 'en' ? '?lang=en' : '')); } catch (e) { } renderTabs(); renderPage(); window.scrollTo({ top: 0 }); }
 
   function renderSummary() {
     const C = SIM.components(S), bm = C.bm;
