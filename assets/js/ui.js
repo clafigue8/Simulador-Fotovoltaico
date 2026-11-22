@@ -110,6 +110,7 @@
   }
   function menu(open) { document.body.classList.toggle('menu-open', open); const b = $('menuBtn'); if (b) b.setAttribute('aria-expanded', open ? 'true' : 'false'); }
   if ($('menuBtn')) { $('menuBtn').onclick = () => menu(!document.body.classList.contains('menu-open')); $('scrim').onclick = () => menu(false); document.addEventListener('keydown', e => { if (e.key === 'Escape') menu(false); }); }
+  if ($('logoHome')) $('logoHome').onclick = e => { e.preventDefault(); go('home'); };
   function go(tab) { menu(false); S.tab = tab; try { history.replaceState(null, '', '#' + tab + (LANG === 'en' ? '?lang=en' : '')); } catch (e) { } renderTabs(); renderPage(); window.scrollTo({ top: 0 }); }
 
   function renderSummary() {

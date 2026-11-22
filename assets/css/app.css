@@ -371,3 +371,8 @@ input[type=range]{accent-color:#ec4899}
   body.menu-open .scrim{opacity:1;pointer-events:auto}
   body.menu-open{overflow:hidden}
 }
+
+/* Logo: más grande y enlace a Inicio */
+.logo{width:54px;height:54px;border-radius:14px;cursor:pointer;text-decoration:none;transition:transform .15s}
+.logo:hover{transform:scale(1.05)}
+@media (max-width:760px){.logo{width:50px;height:50px}}
