@@ -110,6 +110,13 @@
   }
   function menu(open) { document.body.classList.toggle('menu-open', open); const b = $('menuBtn'); if (b) b.setAttribute('aria-expanded', open ? 'true' : 'false'); }
   if ($('menuBtn')) { $('menuBtn').onclick = () => menu(!document.body.classList.contains('menu-open')); $('scrim').onclick = () => menu(false); document.addEventListener('keydown', e => { if (e.key === 'Escape') menu(false); }); }
+  // En pantallas angostas, el tema y el idioma pasan a la barra del menú
+  (() => {
+    const mq = window.matchMedia('(max-width:1000px)'), h = $('htools'), m = $('mtools');
+    if (!h || !m) return;
+    const place = () => { const to = mq.matches ? m : h; [$('themeBtn'), document.querySelector('.lang')].forEach(el => { if (el && el.parentNode !== to) to.appendChild(el); }); };
+    place(); mq.addEventListener ? mq.addEventListener('change', place) : mq.addListener(place);
+  })();
   if ($('logoHome')) $('logoHome').onclick = e => { e.preventDefault(); go('home'); };
   function go(tab) { menu(false); S.tab = tab; try { history.replaceState(null, '', '#' + tab + (LANG === 'en' ? '?lang=en' : '')); } catch (e) { } renderTabs(); renderPage(); window.scrollTo({ top: 0 }); }
 
