@@ -46,22 +46,6 @@
       clouds.add(c);
     }
     let cloudiness = 0.3;
-    /* ---------- lluvia: gotas como segmentos que caen ---------- */
-    const NR = 1400, rainPos = new Float32Array(NR * 6), rainGeo = new THREE.BufferGeometry();
-    rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
-    const rainMat = new THREE.LineBasicMaterial({ color: 0x7f98b8, transparent: true, opacity: 0.8, fog: false, depthWrite: false });
-    const rain = new THREE.LineSegments(rainGeo, rainMat); rain.visible = false; rain.frustumCulled = false; scene.add(rain);
-    let rainH = 30;
-    function seedRain() {
-      const R = span * 0.95; rainH = span * 0.75 + 14; const len = 0.5 + span * 0.014;
-      for (let i = 0; i < NR; i++) { const x = (Math.random() * 2 - 1) * R, z = (Math.random() * 2 - 1) * R, y = Math.random() * rainH; rainPos.set([x, y, z, x + len * 0.08, y - len, z], i * 6); }
-      rainGeo.attributes.position.needsUpdate = true;
-    }
-    function setRain(mm) {
-      const a = Math.max(0, +mm || 0), on = a >= 0.1;
-      if (on && !rain.visible) seedRain();
-      rain.visible = on; rainGeo.setDrawRange(0, Math.round(NR * Math.min(1, 0.12 + a / 5)) * 2); need = true;
-    }
     function placeClouds() {
       clouds.children.forEach((c, i) => { const u = c.userData, R2 = span * 1.6 * u.r; c.position.set(Math.cos(u.a) * R2, span * u.h + 10, Math.sin(u.a) * R2); c.visible = i < Math.round(cloudiness * 14); });
     }
@@ -77,11 +61,6 @@
       if (!alive) return; requestAnimationFrame(loop); controls.update();
       const nowT = performance.now();
       if (cloudiness > 0.02 && document.visibilityState === 'visible' && nowT - (loop.t || 0) > (span > 120 ? 120 : 45)) { loop.t = nowT; clouds.children.forEach(c => { c.userData.a += c.userData.v; if (c.userData.a > Math.PI * 2.05) c.userData.a = Math.PI * 0.95; }); placeClouds(); need = true; }
-      if (rain.visible && document.visibilityState === 'visible' && nowT - (loop.r || 0) > 33) {
-        loop.r = nowT; const dy = span * 0.035 + 0.4;
-        for (let i = 0; i < NR; i++) { const o = i * 6; let y = rainPos[o + 1] - dy; if (y < 0) y += rainH; const d = rainPos[o + 1] - rainPos[o + 4]; rainPos[o + 1] = y; rainPos[o + 4] = y - d; }
-        rainGeo.attributes.position.needsUpdate = true; need = true;
-      }
       if (need || controls.autoRotate) { renderer.render(scene, camera); need = false; }
     }
     loop();
@@ -370,7 +349,7 @@
       }
       need = true;
     }
-    return { build, setSun, setRain, resize, renderer, controls, dispose() { alive = false; ro.disconnect(); renderer.dispose(); container.innerHTML = ''; } };
+    return { build, setSun, resize, renderer, controls, dispose() { alive = false; ro.disconnect(); renderer.dispose(); container.innerHTML = ''; } };
   }
 
   /* ---------- texturas generadas ---------- */

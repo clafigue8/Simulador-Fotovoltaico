@@ -491,12 +491,11 @@
       const doy = doyOfDate(ds); REAL = { key, state: 'ok', day: { ...d, ds, doy, tmy: dayTmy(d, doy) } }; sunUpdate(); wxNote();
     }).catch(err => { if (REAL.key !== key) return; REAL = { key, state: 'error', day: null, err: String(err.message || err) }; sunUpdate(); wxNote(); });
   }
-  const WCODE = c => c == null || isNaN(c) ? '' : c === 0 ? L('despejado', 'clear') : c <= 2 ? L('parcialmente nublado', 'partly cloudy') : c === 3 ? L('nublado', 'overcast') : c <= 48 ? L('niebla', 'fog') : c <= 57 ? L('llovizna', 'drizzle') : c <= 67 ? L('lluvia', 'rain') : c <= 77 ? L('nieve', 'snow') : c <= 82 ? L('chubascos', 'showers') : L('tormenta', 'thunderstorm');
   function wxNote() {
     const el = $('hWxNote'); if (!el || HOME.wx !== 'real') return;
     if (REAL.state === 'loading') { el.textContent = L('Consultando el clima real…', 'Fetching real weather…'); return; }
     if (REAL.state === 'error') { el.textContent = L('No hay datos de clima para esa fecha y lugar (o el servicio no respondió). Se muestra el año típico.', 'No weather data for that date and place (or the service did not respond). Showing the typical year.'); return; }
-    if (REAL.state === 'ok') { const d = REAL.day; el.innerHTML = `${A().esc(d.src)} · ${L('producción del día', 'day production')} <b>${fx(d.Eday ?? 0, d.Eday >= 100 ? 0 : 1)} kWh</b>${d.Etyp != null ? ` (${L('año típico', 'typical year')}: ${fx(d.Etyp, d.Etyp >= 100 ? 0 : 1)} kWh)` : ''} · ${L('lluvia', 'rain')} ${fx(d.pr.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0), 1)} mm`; }
+    if (REAL.state === 'ok') { const d = REAL.day; el.innerHTML = `${A().esc(d.src)} · ${L('producción del día', 'day production')} <b>${fx(d.Eday ?? 0, d.Eday >= 100 ? 0 : 1)} kWh</b>${d.Etyp != null ? ` (${L('año típico', 'typical year')}: ${fx(d.Etyp, d.Etyp >= 100 ? 0 : 1)} kWh)` : ''}`; }
   }
 
   function sunUpdate() {
@@ -516,12 +515,11 @@
     let gh = 0, cs = 0; for (let hh2 = 8.5; hh2 <= 15.5; hh2 += 1) { const w2 = window.SIM.weatherAt(Sx, t, doy, hh2); gh += w2.irr.ghi; cs += window.SOLAR.clearSky(site, w2.sp).ghi; }
     const hi = Math.min(23, Math.max(0, Math.floor(HOME.hour)));
     const cloud = real && !isNaN(real.cc[hi]) ? real.cc[hi] / 100 : t ? Math.max(0, Math.min(1, (1 - gh / Math.max(cs, 1)) * 1.6)) : 0.25;
-    const rainNow = real && !isNaN(real.pr[hi]) ? real.pr[hi] : 0;
     const Pdc = pk * calc.kWp * 1000 / calc.nInv, Pac = sandia(calc.inv, Pdc) * calc.nInv / 1000;
-    if (scene) { scene.setSun(sp.az, sp.el, path, Pac / Math.max(calc.kWac, 0.001), cloud); if (scene.setRain) scene.setRain(rainNow); }
+    if (scene) scene.setSun(sp.az, sp.el, path, Pac / Math.max(calc.kWac, 0.001), cloud);
     const hh = h => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60) % 60).padStart(2, '0')}`;
     const city = HOME.loc ? L('Mi ubicación', 'My location') : A().CITIES[S.site.city] ? A().CITIES[S.site.city].name : '';
-    const hud = $('hud'); if (hud) hud.innerHTML = `<b>${city}</b><span>${hh(HOME.hour)} · ${HOME.wx === 'real' && HOME.date ? new Date(HOME.date + 'T12:00:00Z').toLocaleDateString(A().LANG === 'en' ? 'en-US' : 'es-HN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : `${HOME.day} ${$('hMonth') ? $('hMonth').selectedOptions[0].text.toLowerCase() : ''}`}</span><span class="big">${Pac >= 1000 ? fx(Pac / 1000, 2) + ' MW' : fx(Pac, 2) + ' kW'}</span><span>${L('producción a esta hora', 'output at this hour')}</span><span>${sp.el > 0 ? L(`Sol a ${fx(sp.el, 0)}° de altura`, `Sun ${fx(sp.el, 0)}° high`) : L('Noche', 'Night')} · ${L('nubosidad', 'cloudiness')} ${fx(cloud * 100, 0)} %${real && WCODE(real.code[hi]) ? ' · ' + WCODE(real.code[hi]) : ''}${rainNow >= 0.1 ? ` · ${L('lluvia', 'rain')} ${fx(rainNow, 1)} mm/h` : ''}</span>`;
+    const hud = $('hud'); if (hud) hud.innerHTML = `<b>${city}</b><span>${hh(HOME.hour)} · ${HOME.wx === 'real' && HOME.date ? new Date(HOME.date + 'T12:00:00Z').toLocaleDateString(A().LANG === 'en' ? 'en-US' : 'es-HN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : `${HOME.day} ${$('hMonth') ? $('hMonth').selectedOptions[0].text.toLowerCase() : ''}`}</span><span class="big">${Pac >= 1000 ? fx(Pac / 1000, 2) + ' MW' : fx(Pac, 2) + ' kW'}</span><span>${L('producción a esta hora', 'output at this hour')}</span><span>${sp.el > 0 ? L(`Sol a ${fx(sp.el, 0)}° de altura`, `Sun ${fx(sp.el, 0)}° high`) : L('Noche', 'Night')} · ${L('nubosidad', 'cloudiness')} ${fx(cloud * 100, 0)} %</span>`;
   }
 
   /* ---------- Llevar el diseño al simulador detallado ---------- */
