@@ -14,17 +14,17 @@
     g.fillStyle = css('--surface') || '#fff'; g.fillRect(0, 0, W, H);
     const font = "13px Inter, system-ui, sans-serif", small = "12px Inter, system-ui, sans-serif";
     const hasLegend = o.series.some(s => s.label);
-    const Lm = 60, Rm = o.yr ? 62 : 22, Tm = hasLegend ? 40 : 16;
+    const Lm = o.compact ? 38 : 60, Rm = o.yr ? 62 : (o.compact ? 6 : 22), Tm = hasLegend ? (o.compact ? 52 : 40) : 16;
     // Etiquetas del eje x: si no caben horizontales con espacio, se inclinan para que no queden pegadas
     let rot = false;
-    if (o.xticks && o.xticks.length > 1) { g.font = small; const wMax = Math.max(...o.xticks.map(t => g.measureText(t.label).width)); rot = (W - Lm - Rm) / o.xticks.length < wMax + 14; }
+    if (o.xticks && o.xticks.length > 1) { g.font = o.compact ? "10.5px Inter, system-ui, sans-serif" : small; const wMax = Math.max(...o.xticks.map(t => g.measureText(t.label).width)); rot = (W - Lm - Rm) / o.xticks.length < wMax + 2; }
     const Bm = rot ? 56 : 46, pw = W - Lm - Rm, ph = H - Tm - Bm;
     const xmin = o.xmin ?? 0, xmax = o.xmax ?? (Math.max(...o.xs) || 1);
     const lo = o.yminL || 0, hiL = Math.max(o.ymaxL || 1, lo + 1e-9), stL = nice((hiL - lo) / 5), nd = Math.max(2, Math.ceil((hiL - lo) / stL - 1e-9));
     const yl = { l: lo + nd * stL, r: nice((o.ymaxR || 1) / nd) * nd }, y0 = { l: lo, r: 0 };
     const X = x => Lm + pw * (x - xmin) / (xmax - xmin || 1), Y = (y, s = 'l') => Tm + ph * (1 - (y - y0[s]) / (yl[s] - y0[s]));
     const grid = css('--grid') || '#e8ecf2', axis = css('--axis') || '#8a93a3', mut = css('--muted') || '#5b6475', ink = css('--ink') || '#111';
-    g.lineWidth = 1; g.font = small;
+    g.lineWidth = 1; g.font = o.compact ? "10.5px Inter, system-ui, sans-serif" : small;
     for (let i = 0; i <= nd; i++) {
       const y = Tm + ph * i / nd; g.strokeStyle = grid; g.beginPath(); g.moveTo(Lm, y); g.lineTo(Lm + pw, y); g.stroke();
       g.fillStyle = mut; g.textAlign = 'right'; g.fillText(fmt(+(yl.l - (yl.l - y0.l) * i / nd).toPrecision(6)), Lm - 8, y + 4);
@@ -35,7 +35,8 @@
     else { const xs = o.xstep || nice((xmax - xmin) / 7); for (let x = Math.ceil(xmin / xs) * xs; x <= xmax + 1e-9; x += xs) { g.strokeStyle = grid; g.beginPath(); g.moveTo(X(x), Tm); g.lineTo(X(x), Tm + ph); g.stroke(); g.fillStyle = mut; g.fillText(fmt(+x.toFixed(6)), X(x), Tm + ph + 18); } }
     g.strokeStyle = axis; g.strokeRect(Lm + .5, Tm + .5, pw, ph);
     g.font = font; g.fillStyle = ink; g.fillText(o.xl || '', Lm + pw / 2, H - 8);
-    g.save(); g.translate(16, Tm + ph / 2); g.rotate(-Math.PI / 2); g.fillText(o.yl || '', 0, 0); g.restore();
+    if (o.compact) { g.font = small; g.fillStyle = mut; g.textAlign = 'right'; g.fillText(o.yl || '', Lm - 8, Tm - 10); g.textAlign = 'center'; g.font = font; g.fillStyle = ink; }
+    else { g.save(); g.translate(16, Tm + ph / 2); g.rotate(-Math.PI / 2); g.fillText(o.yl || '', 0, 0); g.restore(); }
     if (o.yr) { g.save(); g.translate(W - 12, Tm + ph / 2); g.rotate(Math.PI / 2); g.fillText(o.yr, 0, 0); g.restore(); }
     g.save(); g.beginPath(); g.rect(Lm, Tm, pw, ph); g.clip();
     for (const s of o.series) {
