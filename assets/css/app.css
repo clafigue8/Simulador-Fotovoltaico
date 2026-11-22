@@ -391,3 +391,5 @@ input[type=range]{accent-color:#ec4899}
 .hwx .seg{flex:none}.hwx .seg button{padding:6px 12px;font-size:13px}
 .hwx #hWxNote{flex:1 1 220px;min-width:0;line-height:1.4}
 .hwx #hWxNote b{color:var(--ink)}
+
+.hwx .tip{flex:1 1 100%;align-items:flex-start;margin:0}.hwx p.note{margin:6px 0 0}
