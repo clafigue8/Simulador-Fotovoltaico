@@ -471,5 +471,30 @@ window.INVERTERS_GRID=[
   "Vstart": 70.0,
   "Vmin": 60.0,
   "Vmax": 500.0
+ },
+ {
+  "name": "Growatt MIN 3000TL-X",
+  "cec": null,
+  "src": "Growatt MIN 2500-6000TL-X: 2 MPPT, arranque 100 V, MPPT 80–500 V, CC máx. 550 V, 13.5 A por MPPT, Isc 16.9 A por MPPT, 3000 W, 230 V, 13.6 A. Eficiencia aproximada (≈ 97 %).",
+  "type": "string",
+  "noAuto": true,
+  "seg": "res",
+  "Vac": 230,
+  "ph": 1,
+  "Paco": 3000.0,
+  "Pdco": 3092.8,
+  "Vdco": 360.0,
+  "Pso": 12.0,
+  "C0": 0,
+  "C1": 0,
+  "C2": 0,
+  "C3": 0,
+  "Pnt": 1.0,
+  "Vdcmax": 550.0,
+  "Idcmax": 13.5,
+  "Iscmax": 16.9,
+  "Vstart": 100.0,
+  "Vmin": 80.0,
+  "Vmax": 500.0
  }
 ];

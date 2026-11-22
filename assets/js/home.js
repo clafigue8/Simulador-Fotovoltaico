@@ -104,7 +104,7 @@
     let autoInv = null;
     if (HOME.invIdx === 'auto') {
       let best = null;
-      invs().filter(x => x.v.type !== 'hybrid').forEach(x => { const z = sizeFor(x.v), pl = plan(x.v, z.ni), sc = (pl.ok ? 0 : 100) + Math.abs(z.dcac - 1.15) + (z.kWac > dmax ? 10 + z.kWac - dmax : 0) + (z.ni > 1 && x.v.type !== 'micro' ? (z.ni - 1) * 0.08 : 0) + (x.v.type === 'micro' ? 0.12 + (n - z.ni) / n * 3 : 0); if (!best || sc < best.sc) best = { sc, i: x.i }; });
+      invs().filter(x => x.v.type !== 'hybrid' && !x.v.noAuto).forEach(x => { const z = sizeFor(x.v), pl = plan(x.v, z.ni), sc = (pl.ok ? 0 : 100) + Math.abs(z.dcac - 1.15) + (z.kWac > dmax ? 10 + z.kWac - dmax : 0) + (z.ni > 1 && x.v.type !== 'micro' ? (z.ni - 1) * 0.08 : 0) + (x.v.type === 'micro' ? 0.12 + (n - z.ni) / n * 3 : 0); if (!best || sc < best.sc) best = { sc, i: x.i }; });
       autoInv = best.i;
     }
     const inv = window.INVERTERS_GRID[HOME.invIdx === 'auto' ? autoInv : HOME.invIdx];

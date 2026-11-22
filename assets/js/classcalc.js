@@ -29,7 +29,7 @@
     },
     ex720: {
       es: 'Ejercicio · panel de 720 W', en: 'Exercise · 720 W panel',
-      g: { kwh: 442, days: 30, sub: 85, Hm: 155, dm: 30, PR: 0.85, mod: 'manual', Pman: 720, invF: 1.0, inv: 'manual', Pinv: 3000, bVoc: 0.25, gVmp: 0.35, Tmin: 8, Tmax: 70, Hy: 1791, Ey: 5304 }
+      g: { kwh: 442, days: 30, sub: 85, Hm: 155, dm: 30, PR: 0.85, mod: 'PolyCrown NS-720MH-132', Pman: 720, invF: 1.0, inv: 'Growatt MIN 3000TL-X', Pinv: 3000, bVoc: 0.25, gVmp: 0.35, Tmin: 8, Tmax: 70, Hy: 1791, Ey: 5304 }
     }
   };
   const CL = {
@@ -64,8 +64,8 @@
       chk.push([L(`Vmp con celda a ${g.Tmax} °C`, `Vmp with cell at ${g.Tmax} °C`), `${fx(pm.Vmp, 2)} × [1 − ${fx(g.gVmp / 100, 4)} × ${g.Tmax - 25}] × ${N} = ${fx(VmpH, 1)} V`, `≥ ${fx(iv.Vstart, 0)} V`, VmpH >= iv.Vstart]);
       chk.push([L(`Vmp con celda a ${g.Tmin} °C`, `Vmp with cell at ${g.Tmin} °C`), `${fx(pm.Vmp, 2)} × [1 + ${fx(g.gVmp / 100, 4)} × ${25 - g.Tmin}] × ${N} = ${fx(VmpC, 1)} V`, `≤ ${fx(iv.Vmax, 0)} V`, VmpC <= iv.Vmax]);
       chk.push([L(`Voc a ${g.Tmin} °C`, `Voc at ${g.Tmin} °C`), `${fx(pm.Voc, 2)} × [1 + ${fx(g.bVoc / 100, 5)} × ${25 - g.Tmin}] × ${N} = ${fx(VocC, 1)} V`, `< ${fx(iv.Vdcmax, 0)} V`, VocC < iv.Vdcmax]);
-      if (iv.Imp) chk.push([L('Corrientes', 'Currents'), `Imp ${fx(pm.Imp, 2)} A · Isc × 1.25 = ${fx(pm.Isc * 1.25, 1)} A`, `${fx(iv.Imp, 0)} A · ${iv.Isc ? fx(iv.Isc, 0) + ' A' : '—'}`, pm.Imp <= iv.Imp && (!iv.Isc || pm.Isc * 1.25 <= iv.Isc)]);
-      if (iv.Isc) chk.push([L('¿Dos strings en paralelo en un MPPT?', 'Two strings in parallel on one MPPT?'), `2 × ${fx(pm.Isc, 2)} A = ${fx(2 * pm.Isc, 1)} A`, `${fx(iv.Isc, 0)} A`, 2 * pm.Isc <= iv.Isc ? true : 'one']);
+      if (iv.Imp) chk.push([L('Corrientes', 'Currents'), `Imp ${fx(pm.Imp, 2)} A · Isc × 1.25 = ${fx(pm.Isc * 1.25, 1)} A`, `${fx(iv.Imp, iv.Imp % 1 ? 1 : 0)} A · ${iv.Isc ? fx(iv.Isc, iv.Isc % 1 ? 1 : 0) + ' A' : '—'}`, pm.Imp <= iv.Imp && (!iv.Isc || pm.Isc * 1.25 <= iv.Isc)]);
+      if (iv.Isc) chk.push([L('¿Dos strings en paralelo en un MPPT?', 'Two strings in parallel on one MPPT?'), `2 × ${fx(pm.Isc, 2)} A = ${fx(2 * pm.Isc, 1)} A`, `${fx(iv.Isc, iv.Isc % 1 ? 1 : 0)} A`, 2 * pm.Isc <= iv.Isc ? true : 'one']);
     }
     return chk;
   }

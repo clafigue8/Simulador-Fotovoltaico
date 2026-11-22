@@ -14,7 +14,10 @@
       Vmp: 41.96, Imp: 13.11, Voc: 49.90, Isc: 14.00, pI: 0.045, pV: -0.275, gP: -0.35, noct: 45, fmts: ['res', 'com', 'util'] },
     // Placa del módulo del banco de trabajo de la UNAH (sin ficha publicada): 72 celdas. Coeficientes y dimensiones típicos de 72 celdas.
     { name: 'Mundo Solar 350 W (banco UNAH)', tech: 'Mono-c-Si', Ns: 72, rows: 12, cols: 6, groups: 3, Pstc: 350, W: 0.992, H: 1.956,
-      Vmp: 39.6, Imp: 8.84, Voc: 47.52, Isc: 9.55, pI: 0.05, pV: -0.30, gP: -0.40, noct: 45, fmts: ['res', 'com'] }
+      Vmp: 39.6, Imp: 8.84, Voc: 47.52, Isc: 9.55, pI: 0.05, pV: -0.30, gP: -0.40, noct: 45, fmts: ['res', 'com'] },
+    // PolyCrown Solar Tech NS-720MH-132 (ejercicio de 720 W): 132 medias celdas tipo N, 2384 × 1303 mm, 34 kg, 1500 V (PV Index, ficha del fabricante).
+    { name: 'PolyCrown NS-720MH-132', tech: 'Mono-c-Si tipo N, 132 medias celdas', Ns: 66, rows: 11, cols: 6, groups: 3, Pstc: 720, W: 1.303, H: 2.384, mass: 34.0,
+      Vmp: 41.89, Imp: 17.19, Voc: 50.00, Isc: 18.00, pI: 0.045, pV: -0.25, gP: -0.29, noct: 45, fmts: ['res', 'com', 'util'] }
   ];
   P.forEach(m => { m.A = +(m.W * m.H).toFixed(3); m.aI = m.Isc * m.pI / 100; m.bV = m.Voc * m.pV / 100; m.placa = true; m.cec = null; });
   window.MODULES.push(...P);
