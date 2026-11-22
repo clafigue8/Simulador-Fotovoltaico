@@ -24,7 +24,7 @@
   const GASPROF = [.4, .35, .35, .35, .4, .6, .85, .95, 1, 1, 1, 1, 1, 1, 1, 1, 1, .95, .9, .85, .75, .6, .5, .45];
   const HOME = {
     kind: 'res', kwh: 350, bills: [350, 350, 350], dmax: 0, cover: 0.9, fmt: 'res', modId: null, invIdx: 'auto', tilt: 20, az: 180,
-    volt: 'bt', cost: { ...COST }, fx: FX_DEFAULT, lossDC: 7, mount: 'free', lawPct: 100, tar: { ...TARIFF.res }, hour: 10.5, month: 3, day: 15, farmMW: 5, price: 111.27
+    volt: 'bt', cost: { ...COST }, fx: FX_DEFAULT, lossDC: 7, mount: 'free', lawPct: 100, tar: { ...TARIFF.res }, wx: 'tmy', date: null, hour: 10.5, month: 3, day: 15, farmMW: 5, price: 111.27
   };
   let scene = null, calc = null, anim = 0, lastT = 0;
 
@@ -216,7 +216,8 @@
       <div class="hero">
         <div class="hero3d card" id="h3d"><div id="h3dc" class="c3d"></div>
           <div class="hud" id="hud"></div>
-          <div class="hctl"><button class="btn pri sm" id="hPlay">▶</button><input type="range" id="hHour" min="0" max="24" step="0.05" value="${HOME.hour}" aria-label="${L('Hora del día', 'Time of day')}"><select class="inp" id="hMonth" style="width:120px;font-family:var(--sans)">${L('Enero Febrero Marzo Abril Mayo Junio Julio Agosto Septiembre Octubre Noviembre Diciembre', 'January February March April May June July August September October November December').split(' ').map((n, i) => `<option value="${i}" ${i === HOME.month ? 'selected' : ''}>${n}</option>`).join('')}</select><select class="inp" id="hDay" style="width:${'72px'};font-family:var(--sans)" aria-label="${L('Día del mes', 'Day of month')}">${Array.from({ length: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][HOME.month] }, (_, k) => `<option value="${k + 1}" ${k + 1 === HOME.day ? 'selected' : ''}>${k + 1}</option>`).join('')}</select></div>
+          <div class="hctl"><button class="btn pri sm" id="hPlay">▶</button><input type="range" id="hHour" min="0" max="24" step="0.05" value="${HOME.hour}" aria-label="${L('Hora del día', 'Time of day')}">${HOME.wx === 'real' ? `<input class="inp" type="date" id="hDate" value="${HOME.date}" min="1940-01-01" max="${addDays(todayHN(), 15)}" style="width:150px;font-family:var(--sans)" aria-label="${L('Fecha', 'Date')}">` : `<select class="inp" id="hMonth" style="width:120px;font-family:var(--sans)">${L('Enero Febrero Marzo Abril Mayo Junio Julio Agosto Septiembre Octubre Noviembre Diciembre', 'January February March April May June July August September October November December').split(' ').map((n, i) => `<option value="${i}" ${i === HOME.month ? 'selected' : ''}>${n}</option>`).join('')}</select><select class="inp" id="hDay" style="width:${'72px'};font-family:var(--sans)" aria-label="${L('Día del mes', 'Day of month')}">${Array.from({ length: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][HOME.month] }, (_, k) => `<option value="${k + 1}" ${k + 1 === HOME.day ? 'selected' : ''}>${k + 1}</option>`).join('')}</select>`}</div>
+          <div class="hwx"><div class="seg"><button data-wx="tmy" class="${HOME.wx === 'tmy' ? 'on' : ''}">${L('Año típico', 'Typical year')}</button><button data-wx="real" class="${HOME.wx === 'real' ? 'on' : ''}">${L('Clima real', 'Real weather')}</button></div>${HOME.wx === 'real' ? `<button class="btn sm" id="hNow">${L('Ahora', 'Now')}</button>` : ''}<span id="hWxNote">${HOME.wx === 'real' ? '' : L('Clima de un año meteorológico típico (PVGIS), no el de una fecha concreta.', 'Weather of a typical meteorological year (PVGIS), not of a specific date.')}</span></div>
           <p class="hint">${L('Arrastra para girar · rueda o pellizco para acercar', 'Drag to rotate · scroll or pinch to zoom')}</p>
         </div>
         <div class="card wiz">
@@ -315,8 +316,14 @@
     $('hFx').onchange = e => { HOME.fx = +e.target.value; update(); };
     $('hHour').oninput = e => { stop(); HOME.hour = +e.target.value; sunUpdate(); };
     const fillDays = () => { const n = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][HOME.month]; HOME.day = Math.min(HOME.day, n); $('hDay').innerHTML = Array.from({ length: n }, (_, k) => `<option value="${k + 1}" ${k + 1 === HOME.day ? 'selected' : ''}>${k + 1}</option>`).join(''); };
-    $('hMonth').onchange = e => { HOME.month = +e.target.value; fillDays(); sunUpdate(); };
-    $('hDay').onchange = e => { HOME.day = +e.target.value; sunUpdate(); };
+    if ($('hMonth')) { $('hMonth').onchange = e => { HOME.month = +e.target.value; fillDays(); sunUpdate(); }; $('hDay').onchange = e => { HOME.day = +e.target.value; sunUpdate(); }; }
+    $('p-home').querySelectorAll('[data-wx]').forEach(b => b.onclick = () => {
+      if (HOME.wx === b.dataset.wx) return; HOME.wx = b.dataset.wx;
+      if (HOME.wx === 'real') { HOME.date = HOME.date || todayHN(); HOME.hour = nowHourHN(); }
+      EXT.home();
+    });
+    if ($('hDate')) $('hDate').onchange = e => { if (e.target.value) { HOME.date = e.target.value; loadReal(); } };
+    if ($('hNow')) $('hNow').onclick = () => { HOME.date = todayHN(); HOME.hour = nowHourHN(); $('hDate').value = HOME.date; $('hHour').value = HOME.hour; loadReal(); };
     $('hPlay').onclick = () => { if (anim) return stop(); if (HOME.hour >= 23.9) HOME.hour = 0; $('hPlay').textContent = '❚❚'; anim = requestAnimationFrame(play); };
     $('hGo').onclick = applyDetailed;
     $('hGrid').onclick = () => A().go('grid');
@@ -410,7 +417,7 @@
   function init3d() {
     const el = $('h3dc'); if (!el) return;
     if (!window.THREE || !window.THREE.OrbitControls) { el.innerHTML = `<p class="note" style="padding:20px">${L('No se pudo cargar la vista 3D.', 'The 3D view could not be loaded.')}</p>`; return; }
-    try { if (scene) scene.dispose(); scene = window.SCENE3D.create(el); build3d(); sunUpdate(); scene.controls.autoRotate = false; }
+    try { if (scene) scene.dispose(); scene = window.SCENE3D.create(el); build3d(); sunUpdate(); scene.controls.autoRotate = false; if (HOME.wx === 'real') loadReal(); }
     catch (e) { el.innerHTML = `<p class="note" style="padding:20px">${L('Tu navegador no admite WebGL para la vista 3D.', 'Your browser does not support WebGL for the 3D view.')}</p>`; scene = null; }
   }
   function build3d() {
@@ -419,22 +426,102 @@
     if (m.W && m.H) { pw = m.W; ph = m.H; } else { const ratio = m.Ns === 36 ? 0.67 / 1.48 : m.Ns === 60 ? 0.99 / 1.65 : 0.99 / 1.96; ph = Math.sqrt(m.A / ratio); pw = m.A / ph; }
     scene.build({ kind: HOME.kind, n: Math.min(calc.n, HOME.kind === 'farm' ? 5000 : 1500), mod: { pw, ph }, tilt: HOME.tilt, az: HOME.az });
   }
+  /* ---------- Clima real de una fecha (Open-Meteo; respaldo NASA POWER) ---------- */
+  // Open-Meteo: pronóstico y días recientes (modelos meteorológicos) e histórico (reanálisis ERA5, desde 1940).
+  // NASA POWER: histórico satelital/reanálisis, con meses de retraso en la radiación. Ningún valor se inventa:
+  // si ninguna fuente responde, se avisa y se vuelve al año típico.
+  const todayHN = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Tegucigalpa' });
+  const nowHourHN = () => { const p = new Date().toLocaleTimeString('en-GB', { timeZone: 'America/Tegucigalpa', hour12: false }).split(':'); return Math.min(23.95, +p[0] + p[1] / 60); };
+  const addDays = (ds, n) => { const d = new Date(ds + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  const dayDiff = ds => Math.round((Date.parse(ds + 'T12:00:00Z') - Date.parse(todayHN() + 'T12:00:00Z')) / 864e5);
+  const doyOfDate = ds => { const d = new Date(ds + 'T12:00:00Z'); return Math.floor((d - Date.UTC(d.getUTCFullYear(), 0, 0)) / 864e5); };
+  const WX = new Map(); let REAL = { key: null, day: null, state: 'idle' };
+  const locKey = () => { const S = A().S; return `${(+S.site.lat).toFixed(3)},${(+S.site.lon).toFixed(3)}`; };
+  // Valores horarios por intervalo [h, h+1): los de Open-Meteo son promedios de la hora anterior a la marca.
+  function fromOM(j, src) {
+    const H = j.hourly, n = H.time.length, at = (a, k) => (k < n && a[k] != null ? a[k] : NaN);
+    const iv = (a, h) => at(a, h + 1), mid = (a, h) => { const x = at(a, h), y = at(a, h + 1); return isNaN(y) ? x : isNaN(x) ? y : (x + y) / 2; };
+    const d = { src, ghi: [], dhi: [], ta: [], ws: [], pr: [], cc: [], code: [] };
+    for (let h = 0; h < 24; h++) { d.ghi.push(iv(H.shortwave_radiation, h)); d.dhi.push(iv(H.diffuse_radiation, h)); d.ta.push(mid(H.temperature_2m, h)); d.ws.push(mid(H.wind_speed_10m, h)); d.pr.push(iv(H.precipitation, h)); d.cc.push(mid(H.cloud_cover, h)); d.code.push(H.weather_code ? at(H.weather_code, h + 1) : NaN); }
+    // la última hora no tiene valor siguiente: se usa la radiación nula de la noche
+    d.ghi[23] = isNaN(d.ghi[23]) ? 0 : d.ghi[23]; d.dhi[23] = isNaN(d.dhi[23]) ? 0 : d.dhi[23]; d.pr[23] = isNaN(d.pr[23]) ? 0 : d.pr[23];
+    return d;
+  }
+  function fromPOWER(j) {
+    const P = j.properties.parameter, ks = Object.keys(P.ALLSKY_SFC_SW_DWN).sort(), f = v => (v == null || v <= -998 ? NaN : v);
+    const d = { src: 'NASA POWER', ghi: [], dhi: [], ta: [], ws: [], pr: [], cc: [], code: [] };
+    ks.slice(0, 24).forEach(k => { d.ghi.push(f(P.ALLSKY_SFC_SW_DWN[k])); d.dhi.push(f(P.ALLSKY_SFC_SW_DIFF[k])); d.ta.push(f(P.T2M[k])); d.ws.push(f(P.WS10M[k])); d.pr.push(f(P.PRECTOTCORR[k])); d.cc.push(f(P.CLOUD_AMT[k])); d.code.push(NaN); });
+    return d;
+  }
+  const valid = d => d && d.ghi.length === 24 && d.ghi.filter(v => !isNaN(v)).length >= 20 && d.ta.filter(v => !isNaN(v)).length >= 20;
+  async function getJSON(u) { const r = await fetch(u); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }
+  function fetchDay(lat, lon, ds) {
+    const key = `${lat.toFixed(3)},${lon.toFixed(3)},${ds}`; if (WX.has(key)) return WX.get(key);
+    const pr = (async () => {
+      const diff = dayDiff(ds), H = 'temperature_2m,shortwave_radiation,diffuse_radiation,cloud_cover,precipitation,wind_speed_10m,weather_code';
+      const q = `latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&hourly=${H}&wind_speed_unit=ms&timezone=America%2FTegucigalpa&start_date=${ds}&end_date=${addDays(ds, 1)}`;
+      const tries = [];
+      if (diff >= -80) tries.push(['https://api.open-meteo.com/v1/forecast?' + q, j => fromOM(j, diff > 0 ? 'Open-Meteo · ' + L('pronóstico', 'forecast') : diff === 0 ? 'Open-Meteo · ' + L('hoy (observado y pronóstico)', 'today (observed and forecast)') : 'Open-Meteo · ' + L('días recientes', 'recent days'))]);
+      if (diff <= -3) tries.push(['https://archive-api.open-meteo.com/v1/archive?' + q, j => fromOM(j, 'Open-Meteo · ' + L('histórico ERA5', 'ERA5 history'))]);
+      if (diff < 0) { const c = ds.replace(/-/g, ''); tries.push([`https://power.larc.nasa.gov/api/temporal/hourly/point?parameters=ALLSKY_SFC_SW_DWN,ALLSKY_SFC_SW_DIFF,T2M,WS10M,PRECTOTCORR,CLOUD_AMT&community=RE&longitude=${lon.toFixed(4)}&latitude=${lat.toFixed(4)}&start=${c}&end=${c}&format=JSON&time-standard=LST`, fromPOWER]); }
+      let last = null;
+      for (const [u, parse] of tries) { try { const d = parse(await getJSON(u)); if (valid(d)) return d; last = 'incomplete'; } catch (e) { last = e.message; } }
+      throw new Error(last || 'no source');
+    })();
+    WX.set(key, pr); pr.catch(() => WX.delete(key)); return pr;
+  }
+  // arreglo tipo TMY con solo las 24 horas del día (para reutilizar el modelo de transposición y temperatura)
+  function dayTmy(d, doy) {
+    const n = 8784, o = { n, ghi: new Float32Array(n), dhi: new Float32Array(n), ta: new Float32Array(n), ws: new Float32Array(n) }, b = (doy - 1) * 24;
+    const fill = (a, k) => { const v = a[k]; return isNaN(v) ? (k > 0 ? fill(a, k - 1) : 0) : v; };
+    for (let h = 0; h < 24; h++) {
+      // centro de la hora h: promedio de los intervalos vecinos
+      const g0 = fill(d.ghi, Math.max(0, h - 1)), g1 = fill(d.ghi, h), f0 = fill(d.dhi, Math.max(0, h - 1)), f1 = fill(d.dhi, h);
+      o.ghi[b + h] = (g0 + g1) / 2; o.dhi[b + h] = isNaN(d.dhi[h]) ? (g0 + g1) / 2 : (f0 + f1) / 2; o.ta[b + h] = fill(d.ta, h); o.ws[b + h] = fill(d.ws, h);
+    }
+    for (let h = 0; h < 24; h++) if (o.dhi[b + h] > o.ghi[b + h]) o.dhi[b + h] = o.ghi[b + h];
+    o.ghi[b + 24] = o.ghi[b + 23]; o.dhi[b + 24] = o.dhi[b + 23]; o.ta[b + 24] = o.ta[b + 23]; o.ws[b + 24] = o.ws[b + 23];
+    return o;
+  }
+  function loadReal() {
+    const S = A().S, ds = HOME.date, key = locKey() + ',' + ds;
+    REAL = { key, day: null, state: 'loading' }; wxNote();
+    fetchDay(+S.site.lat, +S.site.lon, ds).then(d => {
+      if (REAL.key !== key) return;
+      const doy = doyOfDate(ds); REAL = { key, state: 'ok', day: { ...d, ds, doy, tmy: dayTmy(d, doy) } }; sunUpdate(); wxNote();
+    }).catch(err => { if (REAL.key !== key) return; REAL = { key, state: 'error', day: null, err: String(err.message || err) }; sunUpdate(); wxNote(); });
+  }
+  const WCODE = c => c == null || isNaN(c) ? '' : c === 0 ? L('despejado', 'clear') : c <= 2 ? L('parcialmente nublado', 'partly cloudy') : c === 3 ? L('nublado', 'overcast') : c <= 48 ? L('niebla', 'fog') : c <= 57 ? L('llovizna', 'drizzle') : c <= 67 ? L('lluvia', 'rain') : c <= 77 ? L('nieve', 'snow') : c <= 82 ? L('chubascos', 'showers') : L('tormenta', 'thunderstorm');
+  function wxNote() {
+    const el = $('hWxNote'); if (!el || HOME.wx !== 'real') return;
+    if (REAL.state === 'loading') { el.textContent = L('Consultando el clima real…', 'Fetching real weather…'); return; }
+    if (REAL.state === 'error') { el.textContent = L('No hay datos de clima para esa fecha y lugar (o el servicio no respondió). Se muestra el año típico.', 'No weather data for that date and place (or the service did not respond). Showing the typical year.'); return; }
+    if (REAL.state === 'ok') { const d = REAL.day; el.innerHTML = `${A().esc(d.src)} · ${L('producción del día', 'day production')} <b>${fx(d.Eday ?? 0, d.Eday >= 100 ? 0 : 1)} kWh</b>${d.Etyp != null ? ` (${L('año típico', 'typical year')}: ${fx(d.Etyp, d.Etyp >= 100 ? 0 : 1)} kWh)` : ''} · ${L('lluvia', 'rain')} ${fx(d.pr.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0), 1)} mm`; }
+  }
+
   function sunUpdate() {
     if (!calc) return;
-    const S = A().S, md = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31], doy = md.slice(0, HOME.month).reduce((a, b) => a + b, 0) + Math.min(HOME.day, md[HOME.month]);
+    const S = A().S, md = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    const real = HOME.wx === 'real' && REAL.state === 'ok' && REAL.day && REAL.key === locKey() + ',' + HOME.date ? REAL.day : null;
+    const doyT = md.slice(0, HOME.month).reduce((a, b) => a + b, 0) + Math.min(HOME.day, md[HOME.month]);
+    const doy = HOME.wx === 'real' && HOME.date ? doyOfDate(HOME.date) : doyT;
     const site = { ...S.site, tilt: HOME.tilt, az: HOME.az };
     const sp = window.SOLAR.position(site, doy, HOME.hour);
     const path = []; for (let h = 4.5; h <= 19.5; h += 0.25) { const p = window.SOLAR.position(site, doy, h); path.push({ az: p.az, el: p.el }); }
     // producción a esa hora del día elegido (año meteorológico típico de PVGIS)
-    const t = A().useTmy(), Sx = { ...S, site, loss: { soil: 0, mism: 0, iam: true, degr: 0, year: 1 }, modInfo: { noct: calc.m.noct } };
+    const t = real ? real.tmy : A().useTmy(), Sx = { ...S, site: { ...site, src: 'tmy' }, loss: { soil: 0, mism: 0, iam: true, degr: 0, year: 1 }, modInfo: { noct: calc.m.noct } };
+    const PacAt = (tt, dd, h) => { const w = window.SIM.weatherAt(Sx, tt, dd, h); const p = Math.max(0, w.Geff / 1000 * (1 + calc.m.gP / 100 * (cellTc(w) - 25)) * (1 - HOME.lossDC / 100)); return sandia(calc.inv, p * calc.kWp * 1000 / calc.nInv) * calc.nInv / 1000; };
+    if (real && real.Eday == null) { let e = 0, e2 = 0; const tt = A().useTmy(), dT = Math.min(365, doy); for (let h = 0.5; h < 24; h++) { e += PacAt(real.tmy, doy, h); e2 += PacAt(tt, dT, h); } real.Eday = e; real.Etyp = e2; setTimeout(wxNote, 0); }
     const w = window.SIM.weatherAt(Sx, t, doy, HOME.hour), G = w.Geff, pk = w.Geff / 1000 * (1 + calc.m.gP / 100 * (cellTc(w) - 25)) * (1 - HOME.lossDC / 100);
     let gh = 0, cs = 0; for (let hh2 = 8.5; hh2 <= 15.5; hh2 += 1) { const w2 = window.SIM.weatherAt(Sx, t, doy, hh2); gh += w2.irr.ghi; cs += window.SOLAR.clearSky(site, w2.sp).ghi; }
-    const cloud = t ? Math.max(0, Math.min(1, (1 - gh / Math.max(cs, 1)) * 1.6)) : 0.25;
+    const hi = Math.min(23, Math.max(0, Math.floor(HOME.hour)));
+    const cloud = real && !isNaN(real.cc[hi]) ? real.cc[hi] / 100 : t ? Math.max(0, Math.min(1, (1 - gh / Math.max(cs, 1)) * 1.6)) : 0.25;
+    const rainNow = real && !isNaN(real.pr[hi]) ? real.pr[hi] : 0;
     const Pdc = pk * calc.kWp * 1000 / calc.nInv, Pac = sandia(calc.inv, Pdc) * calc.nInv / 1000;
-    if (scene) scene.setSun(sp.az, sp.el, path, Pac / Math.max(calc.kWac, 0.001), cloud);
+    if (scene) { scene.setSun(sp.az, sp.el, path, Pac / Math.max(calc.kWac, 0.001), cloud); if (scene.setRain) scene.setRain(rainNow); }
     const hh = h => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60) % 60).padStart(2, '0')}`;
     const city = HOME.loc ? L('Mi ubicación', 'My location') : A().CITIES[S.site.city] ? A().CITIES[S.site.city].name : '';
-    const hud = $('hud'); if (hud) hud.innerHTML = `<b>${city}</b><span>${hh(HOME.hour)} · ${HOME.day} ${$('hMonth') ? $('hMonth').selectedOptions[0].text.toLowerCase() : ''}</span><span class="big">${Pac >= 1000 ? fx(Pac / 1000, 2) + ' MW' : fx(Pac, 2) + ' kW'}</span><span>${L('producción a esta hora', 'output at this hour')}</span><span>${sp.el > 0 ? L(`Sol a ${fx(sp.el, 0)}° de altura`, `Sun ${fx(sp.el, 0)}° high`) : L('Noche', 'Night')} · ${L('nubosidad', 'cloudiness')} ${fx(cloud * 100, 0)} %</span>`;
+    const hud = $('hud'); if (hud) hud.innerHTML = `<b>${city}</b><span>${hh(HOME.hour)} · ${HOME.wx === 'real' && HOME.date ? new Date(HOME.date + 'T12:00:00Z').toLocaleDateString(A().LANG === 'en' ? 'en-US' : 'es-HN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : `${HOME.day} ${$('hMonth') ? $('hMonth').selectedOptions[0].text.toLowerCase() : ''}`}</span><span class="big">${Pac >= 1000 ? fx(Pac / 1000, 2) + ' MW' : fx(Pac, 2) + ' kW'}</span><span>${L('producción a esta hora', 'output at this hour')}</span><span>${sp.el > 0 ? L(`Sol a ${fx(sp.el, 0)}° de altura`, `Sun ${fx(sp.el, 0)}° high`) : L('Noche', 'Night')} · ${L('nubosidad', 'cloudiness')} ${fx(cloud * 100, 0)} %${real && WCODE(real.code[hi]) ? ' · ' + WCODE(real.code[hi]) : ''}${rainNow >= 0.1 ? ` · ${L('lluvia', 'rain')} ${fx(rainNow, 1)} mm/h` : ''}</span>`;
   }
 
   /* ---------- Llevar el diseño al simulador detallado ---------- */

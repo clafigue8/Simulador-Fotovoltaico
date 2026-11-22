@@ -1,0 +1,26 @@
+HTTP/1.1 200 Connection Established
+
+HTTP/2 200 
+content-type: application/json
+content-length: 6447
+x-amz-cf-pop: IAD55-P1
+date: Sun, 22 Nov 2026 19:14:08 GMT
+x-amzn-trace-id: Root=1-6b033f00-65cd45df3f2f9a600a1d858b;Parent=703279a8317d25a1;Sampled=0;Lineage=1:4833d1ce:0
+x-amzn-requestid: a7a95ac6-94bc-4286-9953-eb00dfcd8630
+x-process-time: 0.03
+content-disposition: inline; filename=POWER_Point_Hourly_20261115_20261116_014d07N_087d19W_LST.json
+x-amzn-remapped-content-length: 6447
+x-data-sources: geosit,syn1deg,power
+content-language: en-US
+x-app-name: hourly
+x-archive-time: 0.37
+x-amz-apigw-id: HQbIJH2nvHcErDg=
+vary: Origin
+x-app-version: v2.10.5
+x-service-time: 0.408
+x-objects-time: 0.006
+via: 1.1 b6caa49e59026d07a8e0859900a10572.cloudfront.net (CloudFront), 1.1 caa5dc507511eeb90523a221b2bd19b4.cloudfront.net (CloudFront)
+x-cache: Miss from cloudfront
+x-amz-cf-pop: IAD55-P8
+x-amz-cf-id: qFzonqYFywPbwWeniga3GIFGOkhi9gHDYPk2bWJaOFEVCcrTj_sdrg==
+

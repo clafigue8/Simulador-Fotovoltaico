@@ -385,3 +385,9 @@ input[type=range]{accent-color:#ec4899}
 .htools,.mtools{display:flex;align-items:center;gap:10px}
 .mspacer{flex:1}
 .mbar .themebtn{height:38px}.mbar .lang button{padding:8px 12px}
+
+/* Modo de clima (año típico / clima real) bajo la vista 3D */
+.hwx{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 16px 14px;background:var(--surface);font-size:13px;color:var(--muted)}
+.hwx .seg{flex:none}.hwx .seg button{padding:6px 12px;font-size:13px}
+.hwx #hWxNote{flex:1 1 220px;min-width:0;line-height:1.4}
+.hwx #hWxNote b{color:var(--ink)}
