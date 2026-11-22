@@ -99,13 +99,13 @@
   const TABS = [
     ['home', 'Inicio', 'Home'], ['mount', 'Montaje y diagrama', 'Installation & diagram'], ['gen', 'Generador FV', 'PV generator'], ['iv', 'Curvas y MPPT', 'Curves & MPPT'], ['site', 'Sitio y clima', 'Site & weather'],
     ['bat', 'Baterías', 'Batteries'], ['conv', 'Conversión y distribución', 'Conversion & distribution'], ['grid', 'Red eléctrica', 'Power grid'],
-    ['sim', 'Simulación', 'Simulation'], ['about', 'Metodología', 'Methodology'], ['install', 'Normativa y equipos', 'Regulations & equipment']
+    ['sim', 'Simulación', 'Simulation'], ['about', 'Metodología', 'Methodology'], ['install', 'Normativa y equipos', 'Regulations & equipment'], ['class', 'Métodos de clase', 'Classroom methods']
   ];
   function renderTabs() {
     $('tabs').innerHTML = TABS.map(([k, es, en], i) => `<button class="tab ${S.tab === k ? 'on' : ''}" data-tab="${k}"><span class="n">${i + 1}</span>${L(es, en)}</button>`).join('');
     $('tabs').querySelectorAll('.tab').forEach(b => b.onclick = () => go(b.dataset.tab));
     document.querySelectorAll('.page').forEach(p => p.classList.toggle('on', p.id === 'p-' + S.tab));
-    document.querySelector('.summary').style.display = ['home', 'grid', 'install', 'mount'].includes(S.tab) ? 'none' : '';
+    document.querySelector('.summary').style.display = ['home', 'grid', 'install', 'mount', 'class'].includes(S.tab) ? 'none' : '';
   }
   function go(tab) { S.tab = tab; try { history.replaceState(null, '', '#' + tab + (LANG === 'en' ? '?lang=en' : '')); } catch (e) { } renderTabs(); renderPage(); window.scrollTo({ top: 0 }); }
 
@@ -842,7 +842,7 @@
   function renderPage() {
     stopPlay();
     const ext = window.PAGES_EXT || {};
-    ({ gen: pageGen, iv: pageIV, site: pageSite, bat: pageBat, conv: pageConv, sim: pageSim, about: pageAbout, home: ext.home, grid: ext.grid, install: ext.install, mount: ext.mount })[S.tab]();
+    ({ gen: pageGen, iv: pageIV, site: pageSite, bat: pageBat, conv: pageConv, sim: pageSim, about: pageAbout, home: ext.home, grid: ext.grid, install: ext.install, mount: ext.mount, class: ext.classcalc })[S.tab]();
   }
   function refresh() {
     ensure(); compute(); renderSummary();

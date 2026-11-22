@@ -24,7 +24,7 @@
   const GASPROF = [.4, .35, .35, .35, .4, .6, .85, .95, 1, 1, 1, 1, 1, 1, 1, 1, 1, .95, .9, .85, .75, .6, .5, .45];
   const HOME = {
     kind: 'res', kwh: 350, bills: [350, 350, 350], dmax: 0, cover: 0.9, fmt: 'res', modId: null, invIdx: 'auto', tilt: 20, az: 180,
-    volt: 'bt', cost: { ...COST }, fx: FX_DEFAULT, hour: 10.5, month: 3, day: 15, farmMW: 5, price: 111.27
+    volt: 'bt', cost: { ...COST }, fx: FX_DEFAULT, lossDC: 7, mount: 'free', lawPct: 100, tar: { ...TARIFF.res }, hour: 10.5, month: 3, day: 15, farmMW: 5, price: 111.27
   };
   let scene = null, calc = null, anim = 0, lastT = 0;
 
@@ -47,6 +47,11 @@
     return Math.max(0, Math.min(v.Paco, p));
   }
 
+  /* ---------- Temperatura de celda según el montaje (modelo de Faiman, coeficientes de PVGIS) ---------- */
+  // Estructura libre: el modelo del sitio (Faiman, U0 = 25, U1 = 6.84). Sobre el techo con poca ventilación
+  // ("building integrated" en PVGIS): U0 = 20.0 W/(m²·K), U1 = 0.
+  function cellTc(w) { return HOME.mount === 'roof' ? w.Ta + w.poa.poa / 20.0 : w.Tc; }
+
   /* ---------- Cálculo principal ---------- */
   function compute() {
     if (isFarm()) return computeFarm();
@@ -55,20 +60,21 @@
     const site = { ...S.site, tilt: HOME.tilt, az: HOME.az };
     const prof = profOf(), psum = prof.reduce((a, b) => a + b, 0);
     const md = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    const lossDC = 0.93;        // suciedad 2 %, mismatch 2 %, cableado 2 %, LID 1 %
+    const lossDC = 1 - HOME.lossDC / 100;   // por defecto 7 %: suciedad 2 %, mismatch 2 %, cableado 2 %, LID 1 %
     // 1) producción específica (kWh/kWp) con datos horarios
     const Sx = { ...S, site, loss: { soil: 0, mism: 0, iam: true, degr: 0, year: 1 }, modInfo: { noct: m.noct } };
     const hourly = new Float32Array(8760), tamb = new Float32Array(8760); let Ykwp = 0, Tmin = 99;
     for (let d = 1, k = 0; d <= 365; d++) for (let h = 0; h < 24; h++, k++) {
       const w = window.SIM.weatherAt(Sx, t, d, h + 0.5);
-      const p = w.Geff / 1000 * (1 + m.gP / 100 * (w.Tc - 25)) * lossDC;  // kW por kWp
+      const Tc = cellTc(w);
+      const p = w.Geff / 1000 * (1 + m.gP / 100 * (Tc - 25)) * lossDC;  // kW por kWp
       hourly[k] = Math.max(0, p); tamb[k] = w.Ta; Ykwp += hourly[k]; if (w.Ta < Tmin) Tmin = w.Ta;
     }
     const Eyear = HOME.kwh * 12;
     // 2) número de paneles
     const Pmod = m.Pstc / 1000;
     let n = Math.max(1, Math.ceil(Eyear * HOME.cover / (Ykwp * Pmod * 0.965)));
-    const nLawE = Math.floor(Eyear / (Ykwp * Pmod * 0.965) * 0.999);  // producción < consumo anual (Art. 47 A.ii)
+    const nLawE = Math.floor(Eyear * HOME.lawPct / 100 / (Ykwp * Pmod * 0.965) * 0.999);  // producción < límite (Art. 47 A.ii: 100 % del consumo anual)
     let capped = false; if (n > nLawE && nLawE >= 1) { n = nLawE; capped = true; }
     // la potencia instalada no puede superar la demanda máxima (Art. 47 A.i): CC hasta 1,25 × demanda
     const nDem = Math.max(1, Math.floor(dmax * 1.25 / Pmod)); let cappedDem = false;
@@ -129,7 +135,8 @@
     // 5) facturas
     const level = isRes() ? 'res' : HOME.volt;
     const exRate = EXCESS_USD_MWH[level === 'mt' ? 'mt' : 'bt'] / 1000 * HOME.fx;  // HNL/kWh
-    const bill = E => level === 'res' ? TARIFF.res.fixed + Math.min(E, TARIFF.res.block) * TARIFF.res.e1 + Math.max(0, E - TARIFF.res.block) * TARIFF.res.e2
+    const TR = HOME.tar;
+    const bill = E => level === 'res' ? TR.fixed + Math.min(E, TR.block) * TR.e1 + Math.max(0, E - TR.block) * TR.e2
       : level === 'bt' ? TARIFF.bt.fixed + E * TARIFF.bt.e : TARIFF.mt.fixed + dmax * TARIFF.mt.dem + E * TARIFF.mt.e;
     let b0 = 0, b1 = 0, credit = 0;
     mon.forEach(x => { b0 += bill(x.load); b1 += bill(x.imp); credit += x.exp * exRate; });
@@ -186,7 +193,8 @@
     ];
     const out = [], res = isRes();
     out.push({ ok: c.kWac <= c.dmax + 1e-9, t: L('Capacidad en CA no mayor que tu demanda máxima de 12 meses', 'AC capacity not above your 12-month maximum demand'), d: L(`${fx(c.kWac, 1)} kW de inversor frente a ${fx(c.dmax, 1)} kW de demanda máxima ${HOME.dmax > 0 ? '' : '(estimada)'}. RLGIE, Art. 47 A.i.`, `${fx(c.kWac, 1)} kW inverter vs ${fx(c.dmax, 1)} kW maximum demand ${HOME.dmax > 0 ? '' : '(estimated)'}. RLGIE, Art. 47 A.i.`) });
-    out.push({ ok: c.tot.pv < c.Eyear, t: L('Producción anual menor que tu consumo anual', 'Annual production below your annual consumption'), d: L(`${fx(c.tot.pv, 0)} kWh/año frente a ${fx(c.Eyear, 0)} kWh/año. RLGIE, Art. 47 A.ii.`, `${fx(c.tot.pv, 0)} kWh/yr vs ${fx(c.Eyear, 0)} kWh/yr. RLGIE, Art. 47 A.ii.`) });
+    const lim = c.Eyear * HOME.lawPct / 100, pctTxt = HOME.lawPct < 100 ? ` (${L('límite elegido', 'chosen limit')}: ${fx(HOME.lawPct, 1)} %)` : '';
+    out.push({ ok: c.tot.pv < lim, t: L('Producción anual menor que tu consumo anual', 'Annual production below your annual consumption') + pctTxt, d: L(`${fx(c.tot.pv, 0)} kWh/año frente a ${fx(lim, 0)} kWh/año (${fx(c.tot.pv / c.Eyear * 100, 1)} % del consumo). RLGIE, Art. 47 A.ii, reformado por el Acuerdo CREE-07-2025.`, `${fx(c.tot.pv, 0)} kWh/yr vs ${fx(lim, 0)} kWh/yr (${fx(c.tot.pv / c.Eyear * 100, 1)} % of consumption). RLGIE, Art. 47 A.ii, amended by Agreement CREE-07-2025.`) });
     if (res && HOME.kind === 'res') out.push({ ok: c.kWac <= 15, warn: true, t: L('Tope de referencia de 15 kW para usuarios residenciales', '15 kW reference cap for residential users'), d: L('Mencionado por la CREE en el informe de la Norma Técnica de Autoproductores (2022). Confírmalo con la distribuidora: el Art. 47 vigente fija el límite por demanda y consumo.', 'Cited by CREE in the Self-generation Technical Standard report (2022). Confirm with the utility: the current Art. 47 sets the limit by demand and consumption.') });
     else if (!res) out.push({ ok: true, info: true, t: L(`Clasificación: ${HOME.volt === 'bt' ? 'tipo A (comercial en baja tensión)' : c.kWac <= 1000 ? 'tipo B (media tensión, hasta 1 MW)' : 'tipo C (media tensión, más de 1 MW)'}`, `Classification: ${HOME.volt === 'bt' ? 'type A (commercial, low voltage)' : c.kWac <= 1000 ? 'type B (medium voltage, up to 1 MW)' : 'type C (medium voltage, above 1 MW)'}`), d: L(HOME.volt === 'bt' ? 'Sin estudios eléctricos adicionales de la distribuidora.' : c.kWac <= 1000 ? 'La distribuidora hace un análisis de capacidad del circuito y cortocircuito; se piden certificados UL / IEC 61215 / IEC 61730.' : 'La distribuidora hace estudios de flujo de potencia, cortocircuito y coordinación de protecciones.', HOME.volt === 'bt' ? 'No additional utility studies.' : c.kWac <= 1000 ? 'The utility checks circuit capacity and short-circuit contribution; UL / IEC 61215 / IEC 61730 certificates are required.' : 'The utility runs power-flow, short-circuit and protection-coordination studies.') });
     out.push({ ok: true, info: true, t: L('Medidor bidireccional', 'Bidirectional meter'), d: res || HOME.volt === 'bt' ? L('Lo instala la distribuidora (RLGIE, Art. 50 A).', 'Installed by the utility (RLGIE, Art. 50 A).') : L('Para usuarios en media tensión lo instala el usuario a su costo (RLGIE, Art. 50 B).', 'For medium-voltage users it is installed by the user at their cost (RLGIE, Art. 50 B).') });
@@ -240,7 +248,13 @@
         <div class="card"><h3>${L('Tu sistema', 'Your system')}</h3><div id="hSys"></div>
           <details style="margin-top:14px"><summary>${L('Ajustes de instalación y costos', 'Installation and cost settings')}</summary>
             <div class="field"><label>${L('Inclinación', 'Tilt')} (°)</label><input class="inp" type="number" id="hTilt" value="${HOME.tilt}" min="0" max="45"></div>
-            <div class="field"><label>${L('Orientación (180 = sur)', 'Azimuth (180 = south)')} (°)</label><input class="inp" type="number" id="hAz" value="${HOME.az}" min="90" max="270"></div>
+            <div class="field"><label>${L('Orientación (azimut de brújula)', 'Azimuth (compass)')} (°)<small>${L('0 = norte, 90 = este, 180 = sur, 270 = oeste. En PVGIS se mide desde el sur: PVGIS = este valor − 180.', '0 = north, 90 = east, 180 = south, 270 = west. PVGIS measures from south: PVGIS = this value − 180.')}</small></label><input class="inp" type="number" id="hAz" value="${HOME.az}" min="0" max="359"></div>
+            <div class="field"><label>${L('Montaje', 'Mounting')}<small>${L('Sobre el techo el panel se ventila menos y se calienta más (como "building integrated" en PVGIS).', 'On the roof the panel is less ventilated and runs hotter (like "building integrated" in PVGIS).')}</small></label><select class="sel" id="hMount"><option value="free" ${HOME.mount === 'free' ? 'selected' : ''}>${L('Estructura libre', 'Free-standing')}</option><option value="roof" ${HOME.mount === 'roof' ? 'selected' : ''}>${L('Sobre el techo', 'On the roof')}</option></select></div>
+            <div class="field"><label>${L('Pérdidas en CC', 'DC losses')} (%)<small>${L('Suciedad, mismatch, cables y LID; el inversor se calcula aparte. PVGIS usa 14 % incluyendo el inversor: para comparar, usa ≈ 10–11 %.', 'Soiling, mismatch, cables and LID; the inverter is computed separately. PVGIS uses 14 % including the inverter: to compare, use ≈ 10–11 %.')}</small></label><input class="inp" type="number" id="hLoss" value="${HOME.lossDC}" min="0" max="40" step="0.5"></div>
+            <div class="field"><label>${L('Límite de producción', 'Production limit')} (% ${L('del consumo anual', 'of annual consumption')})<small>${L('Ley vigente (Art. 47 A.ii, CREE-07-2025): menos del 100 %. La versión anterior pedía ≤ 90 % del consumo mensual con baterías.', 'Current law (Art. 47 A.ii, CREE-07-2025): below 100 %. The previous version required ≤ 90 % of monthly consumption with batteries.')}</small></label><input class="inp" type="number" id="hLaw%" value="${HOME.lawPct}" min="10" max="100" step="0.1"></div>
+            ${isRes() ? `<div class="field"><label>${L('Tarifa: primeros', 'Tariff: first')} ${HOME.tar.block} kWh (L/kWh)<small>${L(`ENEE, ${TARIFF.period.es}: L ${TARIFF.res.e1}. Escribe la de tu recibo si es otra.`, `ENEE, ${TARIFF.period.en}: L ${TARIFF.res.e1}. Enter the one on your bill if different.`)}</small></label><input class="inp" type="number" id="hTe1" value="${HOME.tar.e1}" min="0" step="0.01"></div>
+            <div class="field"><label>${L('Tarifa: resto', 'Tariff: rest')} (L/kWh)</label><input class="inp" type="number" id="hTe2" value="${HOME.tar.e2}" min="0" step="0.01"></div>
+            <div class="field"><label>${L('Cargo fijo', 'Fixed charge')} (L/${L('mes', 'month')})</label><input class="inp" type="number" id="hTf" value="${HOME.tar.fixed}" min="0" step="0.01"></div>` : ''}
             <div class="field"><label>${L('Costo instalado', 'Installed cost')} (USD/Wp)<small>${L('Supuesto editable: pide cotizaciones.', 'Editable assumption: get quotes.')}</small></label><input class="inp" type="number" id="hCost" value="${HOME.cost[HOME.kind]}" min="0.3" max="5" step="0.05"></div>
             <div class="field"><label>${L('Tipo de cambio', 'Exchange rate')} (L/USD)<small>BCH, 12/11/2026</small></label><input class="inp" type="number" id="hFx" value="${HOME.fx}" min="10" max="60" step="0.01"></div>
           </details>
@@ -249,7 +263,7 @@
         <div class="card"><h3>${L('Instalación y normativa', 'Installation and regulations')}</h3><div id="hLaw"></div><div class="btns" style="margin-top:14px"><button class="btn pri" id="hMountGo">${L('Ver montaje 3D y diagrama unifilar →', 'See 3D installation and single-line diagram →')}</button><button class="btn" id="hLawGo">${L('Normativa y equipos →', 'Regulations and equipment →')}</button></div></div>
       </div>
       <div class="card" style="margin-top:24px"><div class="chead"><div><h3>${L('¿Quieres ver el detalle técnico?', 'Want the technical detail?')}</h3><p class="sub">${L('Lleva este diseño al simulador completo: curvas, sombras, MPPT, baterías, red eléctrica y simulación anual.', 'Take this design to the full simulator: curves, shading, MPPT, batteries, power grid and annual simulation.')}</p></div><div class="btns"><button class="btn" id="hGrid">${L('Red, armónicos y motores →', 'Grid, harmonics and motors →')}</button><button class="btn pri" id="hGo">${L('Abrir simulación detallada →', 'Open detailed simulation →')}</button></div></div>
-        <p class="note">${L(`Tarifas de la ENEE publicadas por la CREE (vigentes desde ${TARIFF.period.es}). Producción calculada hora por hora con datos PVGIS, pérdidas del 7 % en CC y la eficiencia del inversor elegido. Valores orientativos: un diseño definitivo requiere visita técnica.`, `ENEE tariffs published by CREE (in force since ${TARIFF.period.en}). Production computed hour by hour with PVGIS data, 7 % DC losses and the selected inverter efficiency. Indicative values: a final design requires a site visit.`)}</p></div>`;
+        <p class="note">${L(`Tarifas de la ENEE publicadas por la CREE (vigentes desde ${TARIFF.period.es}). Producción calculada hora por hora con datos PVGIS, pérdidas del ${fx(HOME.lossDC, 1)} % en CC y la eficiencia del inversor elegido. Valores orientativos: un diseño definitivo requiere visita técnica.`, `ENEE tariffs published by CREE (in force since ${TARIFF.period.en}). Production computed hour by hour with PVGIS data, ${fx(HOME.lossDC, 1)} % DC losses and the selected inverter efficiency. Indicative values: a final design requires a site visit.`)}</p></div>`;
     bind();
     A().loadTmy().then(() => { update(); init3d(); });
   };
@@ -291,7 +305,11 @@
     if ($('hCover')) $('hCover').oninput = e => { $('hCoverV').textContent = Math.round(e.target.value * 100) + ' %'; };
     if ($('hCover')) $('hCover').onchange = e => { HOME.cover = +e.target.value; update(true); };
     $('hTilt').onchange = e => { HOME.tilt = Math.max(0, Math.min(45, +e.target.value)); update(true); };
-    $('hAz').onchange = e => { HOME.az = Math.max(90, Math.min(270, +e.target.value)); update(true); };
+    $('hAz').onchange = e => { HOME.az = ((Math.round(+e.target.value) % 360) + 360) % 360; update(true); };
+    $('hMount').onchange = e => { HOME.mount = e.target.value; update(true); };
+    $('hLoss').onchange = e => { HOME.lossDC = Math.max(0, Math.min(40, +e.target.value || 0)); update(true); };
+    $('hLaw%').onchange = e => { HOME.lawPct = Math.max(10, Math.min(100, +e.target.value || 100)); update(true); };
+    [['hTe1', 'e1'], ['hTe2', 'e2'], ['hTf', 'fixed']].forEach(([id, k]) => { if ($(id)) $(id).onchange = e => { HOME.tar[k] = Math.max(0, +e.target.value || 0); update(); }; });
     $('hCost').onchange = e => { HOME.cost[HOME.kind] = +e.target.value; update(); };
     $('hFx').onchange = e => { HOME.fx = +e.target.value; update(); };
     $('hHour').oninput = e => { stop(); HOME.hour = +e.target.value; sunUpdate(); };
@@ -408,7 +426,7 @@
     const path = []; for (let h = 4.5; h <= 19.5; h += 0.25) { const p = window.SOLAR.position(site, doy, h); path.push({ az: p.az, el: p.el }); }
     // producción a esa hora del día elegido (año meteorológico típico de PVGIS)
     const t = A().useTmy(), Sx = { ...S, site, loss: { soil: 0, mism: 0, iam: true, degr: 0, year: 1 }, modInfo: { noct: calc.m.noct } };
-    const w = window.SIM.weatherAt(Sx, t, doy, HOME.hour), G = w.Geff, pk = w.Geff / 1000 * (1 + calc.m.gP / 100 * (w.Tc - 25)) * 0.93;
+    const w = window.SIM.weatherAt(Sx, t, doy, HOME.hour), G = w.Geff, pk = w.Geff / 1000 * (1 + calc.m.gP / 100 * (cellTc(w) - 25)) * (1 - HOME.lossDC / 100);
     let gh = 0, cs = 0; for (let hh2 = 8.5; hh2 <= 15.5; hh2 += 1) { const w2 = window.SIM.weatherAt(Sx, t, doy, hh2); gh += w2.irr.ghi; cs += window.SOLAR.clearSky(site, w2.sp).ghi; }
     const cloud = t ? Math.max(0, Math.min(1, (1 - gh / Math.max(cs, 1)) * 1.6)) : 0.25;
     const Pdc = pk * calc.kWp * 1000 / calc.nInv, Pac = sandia(calc.inv, Pdc) * calc.nInv / 1000;
