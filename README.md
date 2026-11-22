@@ -24,7 +24,6 @@ Simulador interactivo de un sistema fotovoltaico aislado, desde la celda hasta e
 **Montaje y diagrama (pestaña 2) · Normativa y equipos (última pestaña)**
 - Revisión de la ley hondureña para autoproductores (RLGIE, Arts. 47–50).
 - **Montaje del sistema en 3D** con los equipos etiquetados y **diagrama unifilar** con protecciones y conductores calculados (criterios NEC 690, 705 y 250).
-- **Métodos de clase**: el dimensionamiento por sustitución paso a paso (HSP del peor mes y PR fijo), comparado con la producción simulada y el límite legal (RLGIE, Art. 47 A.ii, Acuerdo CREE‑07‑2025), con verificación de tensiones y corrientes, degradación y efecto en la factura; y el **sistema aislado del banco de trabajo** (controlador MPPT, batería GEL e inversor) con protecciones y conductores.
 - **Ajustes como en PVGIS**: azimut de brújula, montaje sobre el techo o en estructura libre, pérdidas en CC, límite de producción y tarifa editables.
 - Paneles de última generación (2026) y guía de cableado, protecciones y demás dispositivos con marcas de referencia.
 
@@ -83,7 +82,6 @@ Interactive simulator of a stand-alone photovoltaic system, from a single cell u
 **▶ Open the simulator:** https://simuladorfotovoltaico.online/?lang=en
 
 - **3D home page**: a house or an industrial building with panels and the real sun path; five simple questions recommend the number of panels, with real market inverters, ENEE tariffs, savings, payback and a check against Honduran self-generation regulations.
-- **Classroom methods tab**: step-by-step substitution sizing (worst-month peak sun hours and fixed PR) compared with the simulated yield and the legal cap, and the off-grid workbench (MPPT controller, gel battery, inverter) with protections and conductors.
 - **National grid tab**: voltage rise, harmonics against the CREE Distribution Quality Standard limits, and motor starting.
 - **Real commercial modules** (CEC database) with automatic parameter fitting (Villalva method) and **validation against the datasheet** (error below 0.4 %).
 - **Single-diode model with Bishop reverse breakdown**: hot-spot power of shaded cells, Schottky bypass and blocking diodes.

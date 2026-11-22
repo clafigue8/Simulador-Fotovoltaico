@@ -16,6 +16,8 @@
     { id: 'fla6', tech: 'FLA', name: { es: 'Plomo-ácido inundada (ciclo profundo) 6 V · 225 Ah', en: 'Flooded lead-acid (deep cycle) 6 V · 225 Ah' }, V: 6, C: 225, Rint: 0.003, Vfull: 6.40, Vexp: 6.37, Qexp: 0.05, S: 0.40, Vnom: 5.95, Qnom: 0.85, Vcut: 5.25, k: 1.25, eta: 0.85, dod: 0.5, cyc: 1200, cycDod: 0.5, life: 7, mass: 28, maint: true },
     { id: 'agm12', tech: 'AGM', name: { es: 'AGM (VRLA) 12 V · 100 Ah', en: 'AGM (VRLA) 12 V · 100 Ah' }, V: 12, C: 100, Rint: 0.006, Vfull: 12.8, Vexp: 12.75, Qexp: 0.05, S: 0.80, Vnom: 11.9, Qnom: 0.85, Vcut: 10.5, k: 1.15, eta: 0.90, dod: 0.5, cyc: 600, cycDod: 0.5, life: 5, mass: 30 },
     { id: 'gel12', tech: 'GEL', name: { es: 'Gel (VRLA) 12 V · 200 Ah', en: 'Gel (VRLA) 12 V · 200 Ah' }, V: 12, C: 200, Rint: 0.005, Vfull: 12.8, Vexp: 12.75, Qexp: 0.05, S: 0.80, Vnom: 11.9, Qnom: 0.85, Vcut: 10.5, k: 1.12, eta: 0.88, dod: 0.5, cyc: 1000, cycDod: 0.5, life: 8, mass: 62 },
+    // Batería del banco de trabajo de la UNAH (ficha Victron GEL 12 V 165 Ah, BAT412151104): 750 ciclos al 50 % de descarga.
+    { id: 'vgel165', tech: 'GEL', name: { es: 'Victron GEL 12 V · 165 Ah (banco UNAH)', en: 'Victron GEL 12 V · 165 Ah (UNAH bench)' }, V: 12, C: 165, Rint: 0.0055, Vfull: 12.8, Vexp: 12.75, Qexp: 0.05, S: 0.80, Vnom: 11.9, Qnom: 0.85, Vcut: 10.5, k: 1.12, eta: 0.88, dod: 0.5, cyc: 750, cycDod: 0.5, life: 7, mass: 55 },
     { id: 'lfp12', tech: 'LFP', name: { es: 'Litio LiFePO₄ 12,8 V · 100 Ah', en: 'Lithium LiFePO₄ 12.8 V · 100 Ah' }, V: 12.8, C: 100, Rint: 0.015, Vfull: 13.6, Vexp: 13.35, Qexp: 0.05, S: 0.30, Vnom: 12.8, Qnom: 0.9, Vcut: 10.0, k: 1.03, eta: 0.98, dod: 0.9, cyc: 4000, cycDod: 0.8, life: 12, mass: 11 },
     { id: 'lfp24', tech: 'LFP', name: { es: 'Litio LiFePO₄ 25,6 V · 100 Ah', en: 'Lithium LiFePO₄ 25.6 V · 100 Ah' }, V: 25.6, C: 100, Rint: 0.03, Vfull: 27.2, Vexp: 26.7, Qexp: 0.05, S: 0.60, Vnom: 25.6, Qnom: 0.9, Vcut: 20.0, k: 1.03, eta: 0.98, dod: 0.9, cyc: 4000, cycDod: 0.8, life: 12, mass: 22 },
     { id: 'lfp48', tech: 'LFP', name: { es: 'Litio LiFePO₄ 51,2 V · 100 Ah (rack)', en: 'Lithium LiFePO₄ 51.2 V · 100 Ah (rack)' }, V: 51.2, C: 100, Rint: 0.05, Vfull: 54.4, Vexp: 53.4, Qexp: 0.05, S: 1.20, Vnom: 51.2, Qnom: 0.9, Vcut: 44.0, k: 1.03, eta: 0.98, dod: 0.9, cyc: 6000, cycDod: 0.8, life: 15, mass: 45 }
@@ -23,6 +25,8 @@
 
   /* ---------- Catálogo de inversores (aislados, onda senoidal pura) ---------- */
   const INVERTERS = [
+    // Inversor del banco de trabajo de la UNAH: Ampeak 750 W (IVUFB0750), onda senoidal modificada, η ≈ 88 %.
+    { id: 'amp750', name: { es: 'Ampeak 750 W · 12 V CC · 110 V CA (banco UNAH)', en: 'Ampeak 750 W · 12 V DC · 110 V AC (UNAH bench)' }, P: 750, Vdc: 12, Vac: 110, eta: 0.88 },
     { id: 'inv1k12', name: { es: '1 000 W · 12 V CC · 120 V CA', en: '1,000 W · 12 V DC · 120 V AC' }, P: 1000, Vdc: 12, Vac: 120, eta: 0.90 },
     { id: 'inv2k24', name: { es: '2 000 W · 24 V CC · 120 V CA', en: '2,000 W · 24 V DC · 120 V AC' }, P: 2000, Vdc: 24, Vac: 120, eta: 0.92 },
     { id: 'inv3k24', name: { es: '3 000 W · 24 V CC · 120/240 V CA', en: '3,000 W · 24 V DC · 120/240 V AC' }, P: 3000, Vdc: 24, Vac: 240, eta: 0.93 },
