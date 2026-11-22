@@ -28,8 +28,16 @@
       b: { Y: 1320, Ey: 5304, lim: 100, degr: 0.55, goal: 85, e1: 4.40, e2: 5.73, block: 50, fixed: 0, self: 40, exc: 2.5005 }
     },
     ex720: {
-      es: 'Ejercicio · panel de 720 W', en: 'Exercise · 720 W panel',
+      es: 'Ejercicio 720 W · original (Growatt)', en: 'Exercise 720 W · original (Growatt)',
       g: { kwh: 442, days: 30, sub: 85, Hm: 155, dm: 30, PR: 0.85, mod: 'PolyCrown NS-720MH-132', Pman: 720, invF: 1.0, inv: 'Growatt MIN 3000TL-X', Pinv: 3000, bVoc: 0.25, gVmp: 0.35, Tmin: 8, Tmax: 70, Hy: 1791, Ey: 5304 }
+    },
+    ex720ok: {
+      es: 'Ejercicio 720 W · corregido (4 × 720 W + Livoltek HP1-3KS2)', en: 'Exercise 720 W · fixed (4 × 720 W + Livoltek HP1-3KS2)',
+      g: { kwh: 442, days: 30, sub: 85, Hm: 155, dm: 30, PR: 0.85, mod: 'PolyCrown NS-720MH-132', Pman: 720, invF: 1.0, inv: 'Livoltek HP1-3KS2', Pinv: 3000, bVoc: 0.25, gVmp: 0.29, Tmin: 8, Tmax: 70, Hy: 1791, Ey: 5304 }
+    },
+    ex550gw: {
+      es: 'Ejercicio · alternativa (6 × 550 W + Growatt MIN 3000TL-X)', en: 'Exercise · alternative (6 × 550 W + Growatt MIN 3000TL-X)',
+      g: { kwh: 442, days: 30, sub: 85, Hm: 155, dm: 30, PR: 0.85, mod: 'JA Solar JAM72S30-550', Pman: 550, invF: 1.0, inv: 'Growatt MIN 3000TL-X', Pinv: 3000, bVoc: 0.275, gVmp: 0.35, Tmin: 8, Tmax: 70, Hy: 1791, Ey: 5304 }
     }
   };
   const CL = {
@@ -44,7 +52,7 @@
   /* ---------- Panel e inversor elegidos ---------- */
   function panelG() {
     const g = CL.g, i = g.mod === 'manual' ? -1 : modIdx(g.mod), m = i >= 0 ? window.MODULES[i] : null;
-    return m ? { name: m.name, P: m.Pstc, Vmp: m.Vmp, Imp: m.Imp, Voc: m.Voc, Isc: m.Isc } : { name: L('Panel manual', 'Manual panel'), P: g.Pman, Vmp: null, Imp: null, Voc: null, Isc: null };
+    return m ? { name: m.name, P: m.Pstc, Vmp: m.Vmp, Imp: m.Imp, Voc: m.Voc, Isc: m.Isc, pI: m.pI ?? 0.05 } : { name: L('Panel manual', 'Manual panel'), P: g.Pman, Vmp: null, Imp: null, Voc: null, Isc: null };
   }
   function invG() {
     const g = CL.g, i = g.inv === 'manual' ? -1 : invIdx(g.inv), v = i >= 0 ? window.INVERTERS_GRID[i] : null;
@@ -64,7 +72,12 @@
       chk.push([L(`Vmp con celda a ${g.Tmax} °C`, `Vmp with cell at ${g.Tmax} °C`), `${fx(pm.Vmp, 2)} × [1 − ${fx(g.gVmp / 100, 4)} × ${g.Tmax - 25}] × ${N} = ${fx(VmpH, 1)} V`, `≥ ${fx(iv.Vstart, 0)} V`, VmpH >= iv.Vstart]);
       chk.push([L(`Vmp con celda a ${g.Tmin} °C`, `Vmp with cell at ${g.Tmin} °C`), `${fx(pm.Vmp, 2)} × [1 + ${fx(g.gVmp / 100, 4)} × ${25 - g.Tmin}] × ${N} = ${fx(VmpC, 1)} V`, `≤ ${fx(iv.Vmax, 0)} V`, VmpC <= iv.Vmax]);
       chk.push([L(`Voc a ${g.Tmin} °C`, `Voc at ${g.Tmin} °C`), `${fx(pm.Voc, 2)} × [1 + ${fx(g.bVoc / 100, 5)} × ${25 - g.Tmin}] × ${N} = ${fx(VocC, 1)} V`, `< ${fx(iv.Vdcmax, 0)} V`, VocC < iv.Vdcmax]);
-      if (iv.Imp) chk.push([L('Corrientes', 'Currents'), `Imp ${fx(pm.Imp, 2)} A · Isc × 1.25 = ${fx(pm.Isc * 1.25, 1)} A`, `${fx(iv.Imp, iv.Imp % 1 ? 1 : 0)} A · ${iv.Isc ? fx(iv.Isc, iv.Isc % 1 ? 1 : 0) + ' A' : '—'}`, pm.Imp <= iv.Imp && (!iv.Isc || pm.Isc * 1.25 <= iv.Isc)]);
+      const d1 = x => fx(x, x % 1 ? 1 : 0);
+      // Corriente de operación: si Imp supera la entrada del MPPT el inversor limita la corriente y recorta potencia.
+      if (iv.Imp) chk.push([L('Corriente de operación (Imp)', 'Operating current (Imp)'), `${fx(pm.Imp, 2)} A`, `≤ ${d1(iv.Imp)} A ${L('por MPPT', 'per MPPT')}`, pm.Imp <= iv.Imp ? true : 'clip']);
+      // Cortocircuito: el límite del fabricante se compara con la Isc del string a la temperatura máxima de celda
+      // (la Isc × 1.25 es el criterio para cables y protecciones, NEC 690.8).
+      if (iv.Isc) { const IscH = pm.Isc * (1 + (pm.pI ?? 0.05) / 100 * (g.Tmax - 25)); chk.push([L(`Cortocircuito (Isc a ${g.Tmax} °C)`, `Short circuit (Isc at ${g.Tmax} °C)`), `${fx(pm.Isc, 2)} × [1 + ${fx((pm.pI ?? 0.05) / 100, 5)} × ${g.Tmax - 25}] = ${fx(IscH, 2)} A · ${L('cables', 'cables')}: 1.25 × Isc = ${fx(pm.Isc * 1.25, 1)} A`, `≤ ${d1(iv.Isc)} A`, IscH <= iv.Isc]); }
       if (iv.Isc) chk.push([L('¿Dos strings en paralelo en un MPPT?', 'Two strings in parallel on one MPPT?'), `2 × ${fx(pm.Isc, 2)} A = ${fx(2 * pm.Isc, 1)} A`, `${fx(iv.Isc, iv.Isc % 1 ? 1 : 0)} A`, 2 * pm.Isc <= iv.Isc ? true : 'one']);
     }
     return chk;
@@ -78,12 +91,21 @@
     const Echk = kWp * HSP * g.PR, subReal = Echk / Ed * 100;
     const Pinv = g.invF * kWp;
     // inversores de la lista con potencia suficiente, el más pequeño primero
-    const sugg = window.INVERTERS_GRID.filter(v => v.seg === 'res' && v.type !== 'micro' && v.Paco / 1000 >= Pinv - 1e-9).sort((a, b) => a.Paco - b.Paco)[0];
+    const sugg = window.INVERTERS_GRID.filter(v => v.seg === 'res' && v.type !== 'micro' && !/OutBack/.test(v.name) && v.Paco / 1000 >= Pinv - 1e-9).sort((a, b) => a.Paco - b.Paco)[0];
     const dcac = kWp / (iv.P / 1000);
     const chk = chkString(N, pm, iv);
     // estimación anual con el mismo PR fijo
     const EyPR = kWp * g.Hy * g.PR, pctY = EyPR / g.Ey * 100;
     return { pm, iv, Ed, Eobj, HSP, Pp, N, kWp, Echk, subReal, Pinv, sugg, dcac, chk, EyPR, pctY };
+  }
+
+  // Recomendación práctica cuando el panel y el inversor no son compatibles en corriente
+  function advice(r) {
+    const g = CL.g, pm = r.pm, iv = r.iv; if (!pm.Imp || !iv.Imp) return '';
+    const IscH = pm.Isc * (1 + (pm.pI ?? 0.05) / 100 * (g.Tmax - 25));
+    if (pm.Imp <= iv.Imp && (!iv.Isc || IscH <= iv.Isc)) return '';
+    const Vs = r.N * pm.Vmp, okInv = window.INVERTERS_GRID.filter(v => v.seg === 'res' && v.type !== 'micro' && !/OutBack|SolarEdge/.test(v.name) && Vs >= v.Vmin && Vs <= v.Vmax && v.Idcmax >= pm.Imp && (!v.Iscmax || v.Iscmax >= IscH) && v.Paco >= r.kWp * 1000 * 0.8).sort((a, b) => a.Paco - b.Paco).slice(0, 2).map(v => v.name.split(' (')[0]);
+    return `<p style="font-size:14px;color:var(--ink2);margin:10px 0 0"><b>${L('Recomendación práctica', 'Practical recommendation')}:</b> ${L(`el panel entrega ${fx(pm.Imp, 2)} A (Isc ${fx(IscH, 1)} A en caliente) y el inversor admite ${fx(iv.Imp, 1)} A${iv.Isc ? ` (Isc ${fx(iv.Isc, 1)} A)` : ''} por MPPT. Elige un inversor con más corriente por MPPT${okInv.length ? ` (por ejemplo ${okInv.join(' o ')})` : ''} o un panel con Imp ≤ ${fx(iv.Imp, 1)} A${iv.Isc ? ` e Isc ≤ ${fx(iv.Isc / (1 + 0.0005 * (g.Tmax - 25)), 1)} A` : ''}.`, `the panel delivers ${fx(pm.Imp, 2)} A (Isc ${fx(IscH, 1)} A when hot) and the inverter accepts ${fx(iv.Imp, 1)} A${iv.Isc ? ` (Isc ${fx(iv.Isc, 1)} A)` : ''} per MPPT. Choose an inverter with more current per MPPT${okInv.length ? ` (e.g. ${okInv.join(' or ')})` : ''} or a panel with Imp ≤ ${fx(iv.Imp, 1)} A${iv.Isc ? ` and Isc ≤ ${fx(iv.Isc / (1 + 0.0005 * (g.Tmax - 25)), 1)} A` : ''}.`)}</p>`;
   }
 
   /* ---------- Cálculos: ley, simulación y vida útil ---------- */
@@ -156,7 +178,7 @@
 
   /* ---------- Interfaz ---------- */
   const fld = (sec, k, label, step = 'any', help = '') => `<div class="field"><label>${label}${help ? `<small>${help}</small>` : ''}</label><input type="number" step="${step}" data-c="${sec}.${k}" value="${CL[sec][k]}"></div>`;
-  const ok = b => b === 'one' ? `<span class="badge warn">${L('Un solo string por MPPT', 'One string per MPPT')}</span>` : b ? `<span class="badge ok">${L('Cumple', 'OK')}</span>` : `<span class="badge bad">${L('No cumple', 'Fails')}</span>`;
+  const ok = b => b === 'clip' ? `<span class="badge warn">${L('Recorta potencia', 'Clips power')}</span>` : b === 'one' ? `<span class="badge warn">${L('Un solo string por MPPT', 'One string per MPPT')}</span>` : b ? `<span class="badge ok">${L('Cumple', 'OK')}</span>` : `<span class="badge bad">${L('No cumple', 'Fails')}</span>`;
   const table = (head, rows) => `<div class="tscroll"><table class="t"><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td${i === 0 ? ' style="text-align:left"' : ''}>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   const modOpts = (cur, withManual = true) => (withManual ? `<option value="manual" ${cur === 'manual' ? 'selected' : ''}>${L('Escribir los datos a mano', 'Enter data manually')}</option>` : '') +
     window.MODULES.filter(m => !m.typical || true).map(m => { const k = m.name.split(' (')[0]; return `<option value="${esc(k)}" ${m.name.startsWith(cur) && cur !== 'manual' ? 'selected' : ''}>${esc(m.name.replace(/Co\., Ltd\.|Inc\.|Green Energy Technology/g, ''))} · ${m.Pstc.toFixed(0)} W</option>`; }).join('');
@@ -206,7 +228,7 @@
             [L('Comprobación', 'Check'), `${fx(r.kWp, 2)} × ${fx(r.HSP, 2)} × ${fx(g.PR, 2)} = ${fx(r.Echk, 2)} kWh/${L('día', 'day')}`, `${fx(r.subReal, 1)} %`],
             [L('7. Inversor', '7. Inverter'), `${fx(g.invF, 2)} × ${fx(r.kWp, 2)} = ${fx(r.Pinv, 2)} kW${r.sugg ? ` · ${L('sugerido', 'suggested')}: ${esc(r.sugg.name)}` : ''}`, `${esc(r.iv.name.split(' (')[0])} · CC/CA ${fx(r.dcac, 2)}`]
           ])}
-          ${r.chk.length ? `<h4 style="margin-top:16px">${L('8. Verificación de compatibilidad', '8. Compatibility check')}</h4>${table([L('Verificación', 'Check'), L('Cálculo', 'Calculation'), L('Límite', 'Limit'), ''], r.chk.map(c => [c[0], c[1], c[2], ok(c[3])]))}` : `<p class="note">${L('Elige un panel y un inversor de la lista para verificar tensiones y corrientes.', 'Choose a panel and an inverter from the list to check voltages and currents.')}</p>`}
+          ${r.chk.length ? `<h4 style="margin-top:16px">${L('8. Verificación de compatibilidad', '8. Compatibility check')}</h4>${table([L('Verificación', 'Check'), L('Cálculo', 'Calculation'), L('Límite', 'Limit'), ''], r.chk.map(c => [c[0], c[1], c[2], ok(c[3])]))}${advice(r)}` : `<p class="note">${L('Elige un panel y un inversor de la lista para verificar tensiones y corrientes.', 'Choose a panel and an inverter from the list to check voltages and currents.')}</p>`}
           <div class="field" style="margin-top:12px"><label>${L('Irradiación anual en el plano (kWh/m²)', 'Annual plane-of-array irradiation (kWh/m²)')}</label><input type="number" step="1" data-c="g.Hy" value="${g.Hy}"></div>
           <div class="field"><label>${L('Consumo anual (kWh)', 'Annual consumption (kWh)')}</label><input type="number" step="1" data-c="g.Ey" value="${g.Ey}"></div>
           <p style="font-size:14px;color:var(--ink2);margin:10px 0 0">${L(`Con el mismo PR fijo, el método estima ${fx(r.kWp, 2)} × ${fx(g.Hy, 0)} × ${fx(g.PR, 2)} = ${fx(r.EyPR, 0)} kWh al año: el ${fx(r.pctY, 0)} % del consumo anual.`, `With the same fixed PR, the method estimates ${fx(r.kWp, 2)} × ${fx(g.Hy, 0)} × ${fx(g.PR, 2)} = ${fx(r.EyPR, 0)} kWh per year: ${fx(r.pctY, 0)} % of annual consumption.`)} ${r.EyPR >= g.Ey * b.lim / 100 ? `<span class="badge bad">${L('Pasa el límite legal', 'Exceeds the legal limit')}</span>` : `<span class="badge ok">${L('Dentro del límite legal', 'Within the legal limit')}</span>`}</p>
