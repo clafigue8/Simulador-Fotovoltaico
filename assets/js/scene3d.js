@@ -70,7 +70,7 @@
       grass: new THREE.MeshStandardMaterial({ color: 0x7fa05a, roughness: 1 }),
       wall: new THREE.MeshStandardMaterial({ color: 0xf1e9db, roughness: 0.9 }),
       wall2: new THREE.MeshStandardMaterial({ color: 0xd9dde3, roughness: 0.85, metalness: 0.1 }),
-      roof: new THREE.MeshStandardMaterial({ color: 0xc97a8c, roughness: 0.8 }),
+      roof: new THREE.MeshStandardMaterial({ color: 0xa4553b, roughness: 0.8 }),
       roof2: new THREE.MeshStandardMaterial({ color: 0xb9bec6, roughness: 0.7, metalness: 0.2 }),
       trim: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 }),
       glass: new THREE.MeshStandardMaterial({ color: 0x6f8aa6, roughness: 0.15, metalness: 0.6 }),
@@ -252,7 +252,7 @@
       // carretera y autos
       box(CW + 60, 0.03, 12, M.road, 0, 0.02, CD / 2 + 9, false, true);
       box(CW + 8, 0.02, CD + 8, M.wall2, 0, 0.01, 0, false, true);
-      const carCols = [0x2b5aa6, 0xf472b6, 0xf4f5f7];
+      const carCols = [0x2b5aa6, 0xe3a63c, 0xf4f5f7];
       [[-CW / 3 + 1.6, 0.6], [CW / 3 - 1.6, -0.5], [CW / 2 + 12, CD / 2 + 8]].forEach(([x, z], i) => { const cm = new THREE.MeshStandardMaterial({ color: carCols[i], roughness: 0.35, metalness: 0.4 }); box(1.8, 0.8, 4.2, cm, x, 0.65, z); box(1.6, 0.65, 2.2, M.glass, x, 1.35, z - 0.2); });
       tree(-CW / 2 - 6, CD / 2 + 2, 1.3); tree(CW / 2 + 3, sz - 3, 1.2); tree(-CW / 2 - 4, sz, 1.1);
       gridPole(-CW / 2 - 8, CD / 2 + 4, SH * 0.8, -SW / 2, sz + SD / 2, 10);
@@ -431,7 +431,7 @@
     function build(c, d, tx) {
       scene.remove(root); root = new THREE.Group(); scene.add(root);
       const kind = tx.kind || 'res', pw = tx.pw || 1.13, ph = tx.ph || 1.72, tilt = (tx.tilt ?? 15) * rad;
-      const wall = mat(0xf1ece2, 0.9), roofM = mat(0xc97a8c, 0.8), grey = mat(0xc9ced6, 0.8), steel = mat(0x9aa2ad, 0.5, 0.7);
+      const wall = mat(0xf1ece2, 0.9), roofM = mat(0xa4553b, 0.8), grey = mat(0xc9ced6, 0.8), steel = mat(0x9aa2ad, 0.5, 0.7);
       const ground = new THREE.Mesh(new THREE.PlaneGeometry(160, 160), mat(0x8fb069, 1)); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; root.add(ground);
       const panel = (x, y, z, rx) => { const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.x = rx; b(pw, 0.04, ph, PM, 0, 0, 0, g); b(pw + 0.04, 0.03, ph + 0.04, mat(0xc9ced6, 0.35, 0.8), 0, -0.02, 0, g); root.add(g); };
       // filas de paneles inclinados sobre una superficie plana (azotea, marquesina o suelo)
@@ -466,7 +466,7 @@
         const pt = rowsFlat(-W / 2 + 1, W / 2 - 1, D / 2 - 0.8, -D / 2 + 1, H + 0.5, N, true);
         top = [-W / 2 + 0.6, H + 0.4]; ptag = [pt.x, H + 3.2, pt.z];
       } else if (kind === 'gas') {
-        W = 13; D = 7; H = 3.8; b(W, H, D, wall, 0, H / 2, 0); b(W + 0.3, 0.45, D + 0.3, grey, 0, H + 0.22, 0); b(W, 0.6, 0.1, mat(0xec4899, 0.5), 0, H - 0.5, D / 2 + 0.06, false);
+        W = 13; D = 7; H = 3.8; b(W, H, D, wall, 0, H / 2, 0); b(W + 0.3, 0.45, D + 0.3, grey, 0, H + 0.22, 0); b(W, 0.6, 0.1, mat(0xc98a1b, 0.5), 0, H - 0.5, D / 2 + 0.06, false);
         // marquesina con paneles a la izquierda
         const cx = -W / 2 - 9, CW = 12, CD = 8, CH = 5.4;
         b(CW, 0.6, CD, mat(0xffffff, 0.6), cx, CH, D / 2 - CD / 2); for (const dx of [-CW / 3, CW / 3]) b(0.4, CH, 0.4, grey, cx + dx, CH / 2, D / 2 - CD / 2);
@@ -487,7 +487,7 @@
         top = [-6.5, 1.6]; ptag = [-4, 5.5, -7];
         tube([[-6.5, 0.3, -4.5], [-6.5, 0.05, D / 2 + 0.2], [-5.6, 0.05, D / 2 + 0.2]], 0.06, mat(0xc0392b, 0.6));
       }
-      tag(tx.panels, ptag[0], ptag[1], ptag[2], ptag[0], ptag[1] - 1.6, ptag[2], '#ec4899');
+      tag(tx.panels, ptag[0], ptag[1], ptag[2], ptag[0], ptag[1] - 1.6, ptag[2], '#c98a1b');
       // equipos en la fachada (z = D/2)
       const zf = D / 2 + 0.12, y0 = 1.6, red = mat(0xc0392b, 0.6), blk = mat(0x222831, 0.6), cond = mat(0x9aa2ad, 0.5, 0.6), grn = mat(0x2e7d55, 0.6);
       let x = -4.8;
