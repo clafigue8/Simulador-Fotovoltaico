@@ -1,13 +1,15 @@
 rules_version = '2';
-// Reglas de seguridad de Firestore (se pegan en la consola de Firebase → Firestore → Reglas).
-// Cualquiera puede ENVIAR una opinión con el formato correcto; solo los 3 autores pueden leerlas,
-// cambiar su estado o borrarlas.
+// Reglas de seguridad de Firestore. Se pegan en la consola de Firebase → Firestore → Reglas,
+// cambiando CORREO_ADMIN por el correo de Google de la administradora.
+// - Cualquiera puede ENVIAR una opinión con el formato correcto.
+// - Cualquiera puede LEER los comentarios publicados (sin correos).
+// - Solo la administradora puede leer los mensajes completos, editarlos, moverlos y borrarlos.
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isAuthor() {
+    function isAdmin() {
       return request.auth != null
         && request.auth.token.email_verified == true
-        && request.auth.token.email in ['autor1@gmail.com', 'autor2@gmail.com', 'autor3@gmail.com'];
+        && request.auth.token.email in ['CORREO_ADMIN'];
     }
     match /opiniones/{id} {
       allow create: if request.resource.data.keys().hasOnly(['tipo', 'seccion', 'estrellas', 'mensaje', 'nombre', 'correo', 'idioma', 'estado', 'fecha'])
@@ -19,7 +21,14 @@ service cloud.firestore {
         && request.resource.data.estrellas is int && request.resource.data.estrellas >= 0 && request.resource.data.estrellas <= 5
         && request.resource.data.estado == 'nuevo'
         && request.resource.data.fecha == request.time;
-      allow read, update, delete: if isAuthor();
+      allow read, update, delete: if isAdmin();
+    }
+    match /publicas/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /config/{doc} {
+      allow read, write: if isAdmin();
     }
   }
 }

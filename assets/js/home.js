@@ -243,6 +243,7 @@
           ${isFarm() ? '' : `<div class="q"><span class="qn">%</span><div><b>${L('¿Qué parte de tu consumo quieres cubrir?', 'What share of your consumption do you want to cover?')}</b><div class="rowin"><input type="range" id="hCover" min="0.2" max="1" step="0.05" value="${HOME.cover}"><b id="hCoverV" style="min-width:52px;text-align:right">${Math.round(HOME.cover * 100)} %</b></div></div></div>`}
         </div>
       </div>
+      <div id="hRev" class="revslot"></div>
       <div class="kpis big" id="hK" style="margin-top:24px"></div>
       <div class="card" style="margin-top:24px"><h3 style="margin-bottom:16px">${L('Flujo de energía en un año', 'Energy flow over a year')}</h3><div class="flowicons" id="hFlow"></div></div>
       <div class="grid g-2" style="margin-top:24px">
@@ -267,6 +268,7 @@
       <div class="card" style="margin-top:24px"><div class="chead"><div><h3>${L('¿Quieres ver el detalle técnico?', 'Want the technical detail?')}</h3><p class="sub">${L('Lleva este diseño al simulador completo: curvas, sombras, MPPT, baterías, red eléctrica y simulación anual.', 'Take this design to the full simulator: curves, shading, MPPT, batteries, power grid and annual simulation.')}</p></div><div class="btns"><button class="btn" id="hGrid">${L('Red, armónicos y motores →', 'Grid, harmonics and motors →')}</button><button class="btn pri" id="hGo">${L('Abrir simulación detallada →', 'Open detailed simulation →')}</button></div></div>
         <p class="note">${L(`Tarifas de la ENEE publicadas por la CREE (vigentes desde ${TARIFF.period.es}). Producción calculada hora por hora con datos PVGIS, pérdidas del ${fx(HOME.lossDC, 1)} % en CC y la eficiencia del inversor elegido. Valores orientativos: un diseño definitivo requiere visita técnica.`, `ENEE tariffs published by CREE (in force since ${TARIFF.period.en}). Production computed hour by hour with PVGIS data, ${fx(HOME.lossDC, 1)} % DC losses and the selected inverter efficiency. Indicative values: a final design requires a site visit.`)}</p></div>`;
     bind();
+    if (EXT.reviewsBox) EXT.reviewsBox($('hRev'));
     A().loadTmy().then(() => { update(); init3d(); });
   };
 

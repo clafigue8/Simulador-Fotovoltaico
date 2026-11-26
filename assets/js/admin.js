@@ -1,119 +1,129 @@
 /* =====================================================================
-   Panel de autores: inicio de sesión con Google (solo los 3 correos de
-   SITE_CONFIG.admins) y gestión de las opiniones guardadas en Firestore.
-   La protección real está en firestore.rules: aunque alguien abra esta
-   página, sin ser autor no puede leer ni modificar ningún dato.
+   Panel de administración de opiniones (como un correo):
+   carpetas a la izquierda, mensajes a la derecha.
+   Quién puede entrar lo deciden las reglas de Firestore (en la consola de
+   Firebase), no esta página: aquí no se guarda ningún correo.
    ===================================================================== */
 (function () {
   'use strict';
-  const CFG = window.SITE_CONFIG || {}, PREVIEW = !CFG.firebase || /PEGAR_AQUI/.test(CFG.firebase.apiKey);
-  const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
-  const $ = id => document.getElementById(id), esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const ST = window.STORE, $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const TIPO = { opinion: '💬 Opinión', sugerencia: '💡 Sugerencia', error: '🐞 Error', pregunta: '❓ Pregunta' };
-  const ESTADO = { nuevo: ['Nuevo', 'warn'], revision: ['En revisión', ''], hecho: ['Hecho', 'ok'], descartado: ['Descartado', 'bad'] };
   const SEC = { general: 'General', home: 'Inicio', mount: 'Montaje', gen: 'Generador FV', iv: 'Curvas y MPPT', site: 'Sitio y clima', bat: 'Baterías', conv: 'Conversión', grid: 'Red eléctrica', sim: 'Simulación', install: 'Normativa' };
-  let FB = null, ROWS = [], FIL = { tipo: 'todos', estado: 'todos', q: '' };
+  const ESTADO = { nuevo: 'Nuevo', revision: 'En revisión', hecho: 'Resuelto' };
+  const FIXED = [['entrada', '📥', 'Entrada'], ['publicados', '🌐', 'Publicados en el sitio'], ['archivo', '🗄️', 'Archivo'], ['papelera', '🗑️', 'Papelera']];
+  let DENIED = false;
+  let ROWS = [], FOLDERS = [], CUR = 'entrada', Q = '', TF = 'todos', EDIT = null, USER = null;
 
-  const SAMPLE = [
-    { id: 'a1', tipo: 'sugerencia', seccion: 'home', estrellas: 0, mensaje: 'Sería útil poder poner el consumo de los 12 meses y no solo de 3 recibos.', nombre: 'Ana', correo: 'ana@ejemplo.com', estado: 'nuevo', fecha: '2026-11-25T15:02:00' },
-    { id: 'a2', tipo: 'opinion', seccion: 'general', estrellas: 5, mensaje: 'Muy buena herramienta, la usamos en clase de energías renovables.', nombre: '', correo: '', estado: 'revision', fecha: '2026-11-24T10:41:00' },
-    { id: 'a3', tipo: 'error', seccion: 'iv', estrellas: 0, mensaje: 'En el celular la gráfica de curvas se corta a la derecha.', nombre: 'Luis', correo: '', estado: 'hecho', fecha: '2026-11-23T19:15:00', nota: 'Corregido en la versión del 24/11.' },
-    { id: 'a4', tipo: 'pregunta', seccion: 'install', estrellas: 0, mensaje: '¿El límite de la ley es anual o mensual?', nombre: 'María', correo: 'maria@ejemplo.com', estado: 'nuevo', fecha: '2026-11-23T08:30:00' },
-    { id: 'a5', tipo: 'opinion', seccion: 'home', estrellas: 4, mensaje: 'Me gustó la vista 3D, pero me costó encontrar el clima real.', nombre: '', correo: '', estado: 'nuevo', fecha: '2026-11-22T21:05:00' }
-  ];
-
-  async function sdk() {
-    if (FB) return FB;
-    const app = await import(SDK + 'firebase-app.js'), auth = await import(SDK + 'firebase-auth.js'), fs = await import(SDK + 'firebase-firestore.js');
-    const inst = app.initializeApp(CFG.firebase);
-    FB = { auth, fs, a: auth.getAuth(inst), db: fs.getFirestore(inst) };
-    return FB;
-  }
-  const isAdmin = u => u && u.emailVerified !== false && (CFG.admins || []).map(x => x.toLowerCase()).includes((u.email || '').toLowerCase());
+  const inFolder = (r, f) => f === 'publicados' ? r.publicado && r.carpeta !== 'papelera' : (r.carpeta || 'entrada') === f;
+  const count = f => ROWS.filter(r => inFolder(r, f)).length;
+  const unread = f => ROWS.filter(r => inFolder(r, f) && r.estado === 'nuevo').length;
+  const fdate = s => s ? new Date(s).toLocaleString('es-HN', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+  const toast = t => { const el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 2200); };
 
   function loginView(msg = '') {
     $('who').innerHTML = '';
-    $('adm').innerHTML = `<div class="card admlogin"><h3>Acceso solo para los autores</h3><p>Inicia sesión con la cuenta de Google registrada como autor del proyecto.</p><button class="btn pri" id="gIn">Entrar con Google</button>${PREVIEW ? '<p class="note2">Vista previa: Firebase aún no está configurado; se muestran datos de ejemplo.</p>' : ''}${msg ? `<p class="admerr">${esc(msg)}</p>` : ''}</div>`;
-    $('gIn').onclick = async () => {
-      if (PREVIEW) return panel({ email: 'autor1@gmail.com', displayName: 'Autor 1 (vista previa)' });
-      const { auth, a } = await sdk();
-      try { await auth.signInWithPopup(a, new auth.GoogleAuthProvider()); } catch (e) { loginView('No se pudo iniciar sesión.'); }
-    };
+    $('adm').innerHTML = `<div class="card admlogin"><h3>Panel de administración</h3><p>Entra con tu cuenta de Google para revisar las opiniones del simulador.</p><button class="btn pri" id="gIn">Entrar con Google</button>${ST.PREVIEW ? '<p class="note2">Vista previa: Firebase aún no está configurado; se usan datos de ejemplo guardados en este navegador.</p>' : ''}${msg ? `<p class="admerr">${esc(msg)}</p>` : ''}</div>`;
+    $('gIn').onclick = async () => { try { await ST.signIn(); if (ST.PREVIEW) start({ displayName: 'Claudia (vista previa)' }); } catch (e) { loginView('No se pudo iniciar sesión.'); } };
   }
 
-  async function load() {
-    if (PREVIEW) { ROWS = SAMPLE.map(x => ({ ...x })); return; }
-    const { fs, db } = await sdk();
-    const snap = await fs.getDocs(fs.query(fs.collection(db, 'opiniones'), fs.orderBy('fecha', 'desc')));
-    ROWS = snap.docs.map(d => { const x = d.data(); return { id: d.id, ...x, fecha: x.fecha && x.fecha.toDate ? x.fecha.toDate().toISOString() : x.fecha }; });
-  }
-  async function save(id, patch) {
-    const r = ROWS.find(x => x.id === id); Object.assign(r, patch);
-    if (!PREVIEW) { const { fs, db } = await sdk(); await fs.updateDoc(fs.doc(db, 'opiniones', id), patch); }
-  }
-  async function del(id) {
-    ROWS = ROWS.filter(x => x.id !== id);
-    if (!PREVIEW) { const { fs, db } = await sdk(); await fs.deleteDoc(fs.doc(db, 'opiniones', id)); }
-  }
-
-  async function panel(user) {
+  async function start(user) {
+    USER = user;
     $('who').innerHTML = `<span class="admwho">${esc(user.displayName || user.email)}</span> <button class="btn sm" id="gOut">Salir</button>`;
-    $('gOut').onclick = async () => { if (!PREVIEW) { const { auth, a } = await sdk(); await auth.signOut(a); } loginView(); };
-    $('adm').innerHTML = '<p>Cargando…</p>';
-    try { await load(); } catch (e) { $('adm').innerHTML = '<div class="card"><p class="admerr">No se pudieron leer las opiniones. Revisa que tu correo esté en las reglas de Firestore.</p></div>'; return; }
+    $('gOut').onclick = async () => { await ST.signOut(); loginView(); };
+    $('adm').innerHTML = '<p style="padding:24px">Cargando…</p>';
+    try { [ROWS, FOLDERS] = await Promise.all([ST.listAll(), ST.getFolders()]); }
+    catch (e) { DENIED = true; await ST.signOut(); return loginView('Esta cuenta no tiene permiso de administración.'); }
     render();
   }
 
   function render() {
-    const n = ROWS.length, nuevos = ROWS.filter(x => x.estado === 'nuevo').length, st = ROWS.filter(x => x.estrellas > 0);
-    const prom = st.length ? st.reduce((a, x) => a + x.estrellas, 0) / st.length : 0;
-    const list = ROWS.filter(x => (FIL.tipo === 'todos' || x.tipo === FIL.tipo) && (FIL.estado === 'todos' || x.estado === FIL.estado) && (!FIL.q || (x.mensaje + ' ' + x.nombre).toLowerCase().includes(FIL.q.toLowerCase())));
-    const by = t => ROWS.filter(x => x.tipo === t).length;
+    const st = ROWS.filter(r => r.estrellas > 0 && r.carpeta !== 'papelera'), avg = st.length ? st.reduce((a, r) => a + r.estrellas, 0) / st.length : 0;
+    const list = ROWS.filter(r => inFolder(r, CUR) && (TF === 'todos' || r.tipo === TF) && (!Q || (r.mensaje + ' ' + r.nombre + ' ' + (r.nota || '')).toLowerCase().includes(Q.toLowerCase())));
+    const fItem = (k, ic, name, custom) => `<button class="fold ${CUR === k ? 'on' : ''}" data-f="${esc(k)}"><span>${ic}</span><span class="fn">${esc(name)}</span>${unread(k) ? `<b class="fb">${unread(k)}</b>` : `<i>${count(k) || ''}</i>`}${custom ? `<span class="fx"><span data-ren="${esc(k)}" title="Cambiar nombre">✏️</span><span data-delf="${esc(k)}" title="Borrar carpeta">✕</span></span>` : ''}</button>`;
+    const curName = (FIXED.find(f => f[0] === CUR) || [0, '📁', CUR])[2];
     $('adm').innerHTML = `
-      <div class="kpis" style="margin:24px 0">
-        <div class="kpi"><small>Mensajes</small><b>${n}</b></div>
-        <div class="kpi"><small>Sin revisar</small><b>${nuevos}</b></div>
-        <div class="kpi"><small>Valoración promedio</small><b>${st.length ? prom.toFixed(1) + ' ★' : '—'}<span>${st.length} votos</span></b></div>
-        <div class="kpi"><small>Por tipo</small><b style="font-size:14px;font-weight:500">💬 ${by('opinion')} · 💡 ${by('sugerencia')} · 🐞 ${by('error')} · ❓ ${by('pregunta')}</b></div>
+      <div class="kpis admk">
+        <div class="kpi"><small>Mensajes</small><b>${ROWS.filter(r => r.carpeta !== 'papelera').length}</b></div>
+        <div class="kpi"><small>Sin leer</small><b>${ROWS.filter(r => r.estado === 'nuevo' && r.carpeta !== 'papelera').length}</b></div>
+        <div class="kpi"><small>Valoración promedio</small><b>${st.length ? avg.toFixed(1) + ' ★' : '—'}<span>${st.length} votos</span></b></div>
+        <div class="kpi"><small>Publicados en el sitio</small><b>${count('publicados')}</b></div>
       </div>
-      <div class="card">
-        <div class="admbar">
-          <select class="sel" id="fT"><option value="todos">Todos los tipos</option>${Object.entries(TIPO).map(([k, t]) => `<option value="${k}" ${FIL.tipo === k ? 'selected' : ''}>${t}</option>`).join('')}</select>
-          <select class="sel" id="fE"><option value="todos">Todos los estados</option>${Object.entries(ESTADO).map(([k, [t]]) => `<option value="${k}" ${FIL.estado === k ? 'selected' : ''}>${t}</option>`).join('')}</select>
-          <input class="inp" id="fQ" placeholder="Buscar…" value="${esc(FIL.q)}">
-          <button class="btn sm" id="csv">Exportar CSV</button>
-        </div>
-        ${list.length ? list.map(x => `
-          <div class="admrow">
-            <div class="admhead"><b>${TIPO[x.tipo] || x.tipo}</b>${x.estrellas ? `<span class="admstars">${'★'.repeat(x.estrellas)}${'☆'.repeat(5 - x.estrellas)}</span>` : ''}<span class="admsec">${esc(SEC[x.seccion] || x.seccion)}</span><span class="admdate">${x.fecha ? new Date(x.fecha).toLocaleString('es-HN', { dateStyle: 'medium', timeStyle: 'short' }) : ''}</span></div>
-            <p class="admmsg">${esc(x.mensaje)}</p>
-            <div class="admmeta">${x.nombre ? esc(x.nombre) : 'Anónimo'}${x.correo ? ` · <a href="mailto:${esc(x.correo)}">${esc(x.correo)}</a>` : ''}</div>
-            <div class="admact">
-              <select class="sel" data-st="${x.id}">${Object.entries(ESTADO).map(([k, [t]]) => `<option value="${k}" ${x.estado === k ? 'selected' : ''}>${t}</option>`).join('')}</select>
-              <input class="inp" data-nt="${x.id}" placeholder="Nota interna (solo autores)" value="${esc(x.nota || '')}">
-              <button class="btn sm" data-del="${x.id}">Eliminar</button>
-            </div>
-          </div>`).join('') : '<p style="color:var(--muted)">No hay mensajes con esos filtros.</p>'}
-      </div>`;
-    $('fT').onchange = e => { FIL.tipo = e.target.value; render(); };
-    $('fE').onchange = e => { FIL.estado = e.target.value; render(); };
-    $('fQ').oninput = e => { FIL.q = e.target.value; clearTimeout(render.t); render.t = setTimeout(() => { render(); const q = $('fQ'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }, 300); };
+      <div class="admgrid">
+        <aside class="card folders">
+          ${FIXED.map(([k, ic, n]) => fItem(k, ic, n)).join('')}
+          <div class="fsep">Mis carpetas</div>
+          ${FOLDERS.map(f => fItem(f, '📁', f, true)).join('')}
+          <button class="fold newf" id="newF"><span>＋</span><span class="fn">Nueva carpeta</span></button>
+        </aside>
+        <section class="card msgs">
+          <div class="admbar"><h3>${esc(curName)}</h3><span class="sp"></span>
+            <select class="sel" id="fT"><option value="todos">Todos los tipos</option>${Object.entries(TIPO).map(([k, t]) => `<option value="${k}" ${TF === k ? 'selected' : ''}>${t}</option>`).join('')}</select>
+            <input class="inp" id="fQ" placeholder="🔍 Buscar…" value="${esc(Q)}">
+            <button class="btn sm" id="csv" title="Descargar todo en Excel">⬇️ Excel</button>
+            ${CUR === 'papelera' && list.length ? '<button class="btn sm" id="empty">Vaciar papelera</button>' : ''}
+          </div>
+          ${list.length ? list.map(card).join('') : `<p class="empty">${CUR === 'papelera' ? 'La papelera está vacía.' : 'No hay mensajes aquí.'}</p>`}
+        </section>
+      </div>
+      <div class="toast" id="toast"></div>`;
+    bind(list);
+  }
+
+  function card(r) {
+    const ed = EDIT === r.id, moveOpts = [['entrada', '📥 Entrada'], ['archivo', '🗄️ Archivo'], ...FOLDERS.map(f => [f, '📁 ' + f])].filter(([k]) => k !== (r.carpeta || 'entrada'));
+    return `<article class="msg ${r.estado === 'nuevo' ? 'unread' : ''}" data-id="${r.id}">
+      <div class="mh"><b>${TIPO[r.tipo] || r.tipo}</b>${r.estrellas ? `<span class="admstars">${'★'.repeat(r.estrellas)}${'☆'.repeat(5 - r.estrellas)}</span>` : ''}<span class="tag">${esc(SEC[r.seccion] || r.seccion)}</span>${r.publicado ? '<span class="tag pub">🌐 Publicado</span>' : ''}<span class="md">${fdate(r.fecha)}</span></div>
+      ${ed ? `<div class="edit">
+          <label>Nombre<input class="inp" id="eN" value="${esc(r.nombre)}" maxlength="80"></label>
+          ${r.tipo === 'opinion' ? `<label>Estrellas<select class="sel" id="eS">${[0, 1, 2, 3, 4, 5].map(n => `<option value="${n}" ${n === r.estrellas ? 'selected' : ''}>${n ? '★'.repeat(n) : 'Sin valoración'}</option>`).join('')}</select></label>` : ''}
+          <label class="w">Mensaje<textarea class="inp" id="eM" rows="4" maxlength="2000">${esc(r.mensaje)}</textarea></label>
+          <label class="w">Nota interna (solo tú la ves)<input class="inp" id="eT" value="${esc(r.nota || '')}" maxlength="500"></label>
+          <div class="btns"><button class="btn pri sm" data-save="${r.id}">Guardar cambios</button><button class="btn sm" data-cancel="1">Cancelar</button></div></div>`
+      : `<p class="mm">${esc(r.mensaje)}</p>
+         <div class="mf">${r.nombre ? esc(r.nombre) : 'Anónimo'}${r.correo ? ` · <a href="mailto:${esc(r.correo)}">✉️ ${esc(r.correo)}</a>` : ''}${r.nota ? ` · <span class="nota">📝 ${esc(r.nota)}</span>` : ''}</div>`}
+      ${ed ? '' : `<div class="ma">
+        ${r.carpeta === 'papelera'
+          ? `<button class="btn sm" data-restore="${r.id}">↩️ Restaurar</button><button class="btn sm danger" data-kill="${r.id}">Eliminar para siempre</button>`
+          : `<button class="btn sm ${r.publicado ? '' : 'pri'}" data-pub="${r.id}">${r.publicado ? '🙈 Quitar del sitio' : '🌐 Publicar en el sitio'}</button>
+             <select class="sel" data-st="${r.id}" title="Estado">${Object.entries(ESTADO).map(([k, t]) => `<option value="${k}" ${r.estado === k ? 'selected' : ''}>${t}</option>`).join('')}</select>
+             <select class="sel" data-mv="${r.id}"><option value="">📁 Mover a…</option>${moveOpts.map(([k, t]) => `<option value="${esc(k)}">${esc(t)}</option>`).join('')}</select>
+             <button class="btn sm" data-edit="${r.id}">✏️ Editar</button>
+             <button class="btn sm" data-trash="${r.id}">🗑️</button>`}
+      </div>`}
+    </article>`;
+  }
+
+  function bind(list) {
+    const row = id => ROWS.find(r => r.id === id);
+    const act = (sel, fn) => document.querySelectorAll(sel).forEach(el => el.onclick = async e => { e.stopPropagation(); try { await fn(el); } catch (err) { toast('No se pudo guardar. Revisa tu conexión.'); } });
+    document.querySelectorAll('[data-f]').forEach(b => b.onclick = e => { if (e.target.closest('[data-ren],[data-delf]')) return; CUR = b.dataset.f; EDIT = null; render(); });
+    $('fT').onchange = e => { TF = e.target.value; render(); };
+    $('fQ').oninput = e => { Q = e.target.value; clearTimeout(bind.t); bind.t = setTimeout(() => { render(); const q = $('fQ'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }, 300); };
     $('csv').onclick = csv;
-    document.querySelectorAll('[data-st]').forEach(s => s.onchange = async () => { await save(s.dataset.st, { estado: s.value }); render(); });
-    document.querySelectorAll('[data-nt]').forEach(s => s.onchange = () => save(s.dataset.nt, { nota: s.value.slice(0, 500) }));
-    document.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { if (confirm('¿Eliminar este mensaje? No se puede deshacer.')) { await del(b.dataset.del); render(); } });
+    $('newF').onclick = async () => { const n = (prompt('Nombre de la nueva carpeta:') || '').trim(); if (!n) return; if (FOLDERS.includes(n) || FIXED.some(f => f[0] === n)) return toast('Ya existe una carpeta con ese nombre.'); FOLDERS.push(n); await ST.setFolders(FOLDERS); CUR = n; render(); toast('Carpeta creada.'); };
+    act('[data-ren]', async el => { const old = el.dataset.ren, n = (prompt('Nuevo nombre de la carpeta:', old) || '').trim(); if (!n || n === old) return; FOLDERS = FOLDERS.map(f => f === old ? n : f); await ST.setFolders(FOLDERS); for (const r of ROWS.filter(r => r.carpeta === old)) await ST.update(r, { carpeta: n }); if (CUR === old) CUR = n; render(); toast('Carpeta renombrada.'); });
+    act('[data-delf]', async el => { const f = el.dataset.delf; if (!confirm(`¿Borrar la carpeta "${f}"? Sus mensajes vuelven a Entrada.`)) return; for (const r of ROWS.filter(r => r.carpeta === f)) await ST.update(r, { carpeta: 'entrada' }); FOLDERS = FOLDERS.filter(x => x !== f); await ST.setFolders(FOLDERS); if (CUR === f) CUR = 'entrada'; render(); toast('Carpeta borrada.'); });
+    act('[data-pub]', async el => { const r = row(el.dataset.pub); await ST.setPublished(r, !r.publicado); render(); toast(r.publicado ? 'Ahora se ve en el sitio.' : 'Ya no se ve en el sitio.'); });
+    document.querySelectorAll('[data-st]').forEach(s => s.onchange = async () => { try { await ST.update(row(s.dataset.st), { estado: s.value }); render(); } catch (e) { toast('No se pudo guardar.'); } });
+    document.querySelectorAll('[data-mv]').forEach(s => s.onchange = async () => { if (!s.value) return; try { await ST.update(row(s.dataset.mv), { carpeta: s.value }); render(); toast('Mensaje movido.'); } catch (e) { toast('No se pudo mover.'); } });
+    act('[data-edit]', async el => { EDIT = el.dataset.edit; render(); });
+    act('[data-cancel]', async () => { EDIT = null; render(); });
+    act('[data-save]', async el => { const r = row(el.dataset.save), p = { nombre: $('eN').value.trim(), mensaje: $('eM').value.trim().slice(0, 2000), nota: $('eT').value.trim() }; if ($('eS')) p.estrellas = +$('eS').value; if (p.mensaje.length < 1) return toast('El mensaje no puede quedar vacío.'); await ST.update(r, p); EDIT = null; render(); toast('Cambios guardados.'); });
+    act('[data-trash]', async el => { const r = row(el.dataset.trash); if (r.publicado) await ST.setPublished(r, false); await ST.update(r, { carpeta: 'papelera', carpetaPrev: r.carpeta || 'entrada' }); render(); toast('Movido a la papelera.'); });
+    act('[data-restore]', async el => { const r = row(el.dataset.restore); await ST.update(r, { carpeta: r.carpetaPrev || 'entrada' }); render(); toast('Mensaje restaurado.'); });
+    act('[data-kill]', async el => { if (!confirm('¿Eliminar este mensaje para siempre? No se puede deshacer.')) return; const r = row(el.dataset.kill); await ST.remove(r); ROWS = ROWS.filter(x => x !== r); render(); toast('Eliminado.'); });
+    if ($('empty')) $('empty').onclick = async () => { const t = ROWS.filter(r => r.carpeta === 'papelera'); if (!confirm(`¿Eliminar para siempre ${t.length} mensaje(s)?`)) return; for (const r of t) await ST.remove(r); ROWS = ROWS.filter(r => r.carpeta !== 'papelera'); render(); toast('Papelera vaciada.'); };
+    // al abrir un mensaje nuevo se marca como leído (pasa a "En revisión")
+    document.querySelectorAll('.msg.unread').forEach(m => m.addEventListener('click', async e => { if (e.target.closest('button,select,input,textarea,a')) return; const r = row(m.dataset.id); if (r && r.estado === 'nuevo') { await ST.update(r, { estado: 'revision' }); render(); } }));
   }
 
   function csv() {
-    const cols = ['fecha', 'tipo', 'seccion', 'estrellas', 'mensaje', 'nombre', 'correo', 'estado', 'nota'];
+    const cols = ['fecha', 'tipo', 'seccion', 'estrellas', 'mensaje', 'nombre', 'correo', 'estado', 'carpeta', 'publicado', 'nota'];
     const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
     const blob = new Blob(['﻿' + [cols.join(','), ...ROWS.map(r => cols.map(c => q(r[c])).join(','))].join('\n')], { type: 'text/csv' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'opiniones-simulador.csv'; a.click();
   }
 
-  (async () => {
-    if (PREVIEW) return loginView();
-    const { auth, a } = await sdk();
-    auth.onAuthStateChanged(a, u => { if (!u) return loginView(); if (!isAdmin(u)) { auth.signOut(a); return loginView('Esta cuenta no está registrada como autor.'); } panel(u); });
-  })();
+  ST.onAuth(u => { if (u) { DENIED = false; start(u); } else loginView(DENIED ? 'Esta cuenta no tiene permiso de administración.' : ''); });
 })();

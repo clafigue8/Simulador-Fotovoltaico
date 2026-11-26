@@ -868,7 +868,7 @@
     document.querySelectorAll('.lang button').forEach(b => b.classList.toggle('on', b.dataset.lang === LANG));
     try { localStorage.setItem('lang', LANG); } catch (e) { }
     try { const u = new URL(location.href); u.searchParams.set('lang', LANG); history.replaceState(null, '', u); } catch (e) { }
-    $('foot').innerHTML = `${L('Seminario de Investigación · Ingeniería Eléctrica · Universidad Nacional Autónoma de Honduras', 'Research Seminar · Electrical Engineering · National Autonomous University of Honduras')}<br>Claudia Figueroa · Dennis Johan López · M.Sc. Daniel Flores<div class="footlinks"><a href="#opinion" id="footFb">💬 ${L('Opiniones y sugerencias', 'Feedback & suggestions')}</a><a href="${(window.SITE_CONFIG || {}).paypal || '#'}" target="_blank" rel="noopener">☕ ${L('Apoyar con PayPal', 'Support with PayPal')}</a><a href="admin.html" rel="nofollow">🔒 ${L('Autores', 'Authors')}</a></div>`;
+    $('foot').innerHTML = `${L('Seminario de Investigación · Ingeniería Eléctrica · Universidad Nacional Autónoma de Honduras', 'Research Seminar · Electrical Engineering · National Autonomous University of Honduras')}<br>Claudia Figueroa · Dennis Johan López · M.Sc. Daniel Flores<div class="footlinks"><a href="#opinion" id="footFb">💬 ${L('Opiniones y sugerencias', 'Feedback & suggestions')}</a><a href="admin.html" rel="nofollow">🔒 ${L('Administración', 'Admin')}</a></div>`;
     if ($('footFb')) $('footFb').onclick = e => { e.preventDefault(); go('opinion'); };
     applyModule(); compute(); renderTabs(); renderSummary(); renderPage();
   }
