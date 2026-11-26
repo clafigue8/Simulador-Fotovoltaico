@@ -49,9 +49,11 @@
     // Público: comentarios publicados (sin correos)
     async listPublic(n = 30) {
       if (PREVIEW) return mock.get().rows.filter(r => r.publicado).map(r => ({ id: r.id, ...pub(r) })).sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, n);
-      const { fs, db } = await sdk();
-      const s = await fs.getDocs(fs.query(fs.collection(db, 'publicas'), fs.orderBy('fecha', 'desc'), fs.limit(n)));
-      return s.docs.map(d => ({ id: d.id, ...d.data(), fecha: iso(d.data().fecha) }));
+      // lectura pública por la API REST: no hace falta descargar la librería de Firebase en Inicio
+      const url = `https://firestore.googleapis.com/v1/projects/${CFG.projectId}/databases/(default)/documents/publicas?pageSize=${n}&orderBy=fecha%20desc&key=${CFG.apiKey}`;
+      const r = await fetch(url); if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json(), val = v => v == null ? '' : v.stringValue ?? (v.integerValue != null ? +v.integerValue : v.doubleValue ?? v.timestampValue ?? v.booleanValue ?? '');
+      return (j.documents || []).map(d => { const f = d.fields || {}; return { id: d.name.split('/').pop(), tipo: val(f.tipo), estrellas: +val(f.estrellas) || 0, mensaje: val(f.mensaje), nombre: val(f.nombre), fecha: val(f.fecha) }; });
     },
     // Administración
     async onAuth(cb) {

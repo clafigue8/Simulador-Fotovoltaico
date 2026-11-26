@@ -2,15 +2,46 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Simulador Fotovoltaico</title>
-<meta name="description" content="Simulador interactivo de sistemas fotovoltaicos aislados: celda, módulo, arreglo, sombras, MPPT, baterías, inversor y distribución. Datos meteorológicos reales de Honduras.">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulador Fotovoltaico Honduras · Diseña tu sistema de paneles solares</title>
+<meta name="description" content="Simulador gratuito de paneles solares para Honduras: calcula cuántos paneles necesitas, el inversor, el ahorro en tu factura de la ENEE, la normativa de la CREE y el retorno de la inversión. Vista 3D, clima real y análisis financiero.">
+<meta name="keywords" content="simulador fotovoltaico, paneles solares Honduras, energía solar, calculadora solar, ENEE, CREE, inversor, ahorro factura, sistema fotovoltaico, UNAH">
+<meta name="author" content="Claudia Figueroa, Dennis Johan López, Daniel Flores">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="canonical" href="https://simuladorfotovoltaico.online/">
+<meta name="theme-color" content="#1d3b6e">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="48x48" href="/assets/img/favicon-48.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/assets/img/icon-192.png">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Simulador FV">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<!-- Vista previa al compartir (WhatsApp, Facebook, X, LinkedIn) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Simulador Fotovoltaico">
+<meta property="og:locale" content="es_HN">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:url" content="https://simuladorfotovoltaico.online/">
+<meta property="og:title" content="Simulador de Sistemas Fotovoltaicos · Honduras">
+<meta property="og:description" content="Diseña tu sistema solar: paneles, inversor, ahorro en la factura de la ENEE, normativa y análisis financiero. Gratis, con vista 3D y clima real.">
+<meta property="og:image" content="https://simuladorfotovoltaico.online/assets/img/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Simulador de Sistemas Fotovoltaicos con vista 3D de una casa con paneles solares">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Simulador de Sistemas Fotovoltaicos · Honduras">
+<meta name="twitter:description" content="Diseña tu sistema solar: paneles, inversor, ahorro, normativa y análisis financiero.">
+<meta name="twitter:image" content="https://simuladorfotovoltaico.online/assets/img/og-image.jpg">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"Simulador de Sistemas Fotovoltaicos","alternateName":"Simulador Fotovoltaico Honduras","url":"https://simuladorfotovoltaico.online/","image":"https://simuladorfotovoltaico.online/assets/img/og-image.jpg","description":"Simulador gratuito de sistemas fotovoltaicos para Honduras: dimensionamiento de paneles e inversor, ahorro en la factura de la ENEE, normativa de la CREE, curvas I-V, sombras, baterías, red eléctrica y análisis financiero.","applicationCategory":"EducationalApplication","operatingSystem":"Web, Android, iOS, Windows, macOS","inLanguage":["es","en"],"isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"creator":[{"@type":"Person","name":"Claudia Figueroa"},{"@type":"Person","name":"Dennis Johan López"},{"@type":"Person","name":"Daniel Flores"}],"sourceOrganization":{"@type":"CollegeOrUniversity","name":"Universidad Nacional Autónoma de Honduras","department":"Ingeniería Eléctrica"},"spatialCoverage":{"@type":"Country","name":"Honduras"}}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/app.css?v=202611262100">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:wght@400;600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:wght@400;600&display=swap"></noscript>
+<link rel="stylesheet" href="assets/css/app.css?v=202611262200">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('tema')||'light'}catch(e){document.documentElement.dataset.theme='light'}</script>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231d3b6e'/%3E%3Ccircle cx='22' cy='10' r='4' fill='%23e3a63c'/%3E%3Cpath d='M5 25l5-11h13l4 11z' fill='%237fa6e6'/%3E%3C/svg%3E">
 </head>
 <body>
 <header class="top">
@@ -52,26 +83,27 @@
 </div>
 <dialog id="dlg"><div id="dlgBody"></div></dialog>
 
-<script src="assets/vendor/three.min.js"></script>
-<script src="assets/vendor/OrbitControls.js"></script>
-<script src="data/modules.js?v=202611212029"></script>
-<script src="data/modules-placas.js?v=3"></script>
-<script src="data/modules-2026.js?v=202611212029"></script>
-<script src="data/inverters.js?v=202611221930"></script>
-<script src="assets/js/pv.js?v=202611212029"></script>
-<script src="assets/js/solar.js?v=202611212029"></script>
-<script src="assets/js/system.js?v=202611222100"></script>
-<script src="assets/js/config.js?v=3"></script>
-<script src="assets/js/sitecfg.js?v=202611262000"></script>
-<script src="assets/js/sim.js?v=202611212029"></script>
-<script src="assets/js/charts.js?v=202611230000"></script>
-<script src="assets/js/scene3d.js?v=202611240900"></script>
-<script src="assets/js/home.js?v=202611262000"></script>
-<script src="assets/js/finance.js?v=2"></script>
-<script src="assets/js/grid.js?v=202611262100"></script>
-<script src="assets/js/install.js?v=202611212140"></script>
-<script src="assets/js/store.js?v=2"></script>
-<script src="assets/js/feedback.js?v=3"></script>
-<script src="assets/js/ui.js?v=202611261800"></script>
+<script defer src="assets/vendor/three.min.js"></script>
+<script defer src="assets/vendor/OrbitControls.js"></script>
+<script defer src="data/modules.js?v=202611212029"></script>
+<script defer src="data/modules-placas.js?v=3"></script>
+<script defer src="data/modules-2026.js?v=202611212029"></script>
+<script defer src="data/inverters.js?v=202611221930"></script>
+<script defer src="assets/js/pv.js?v=202611212029"></script>
+<script defer src="assets/js/solar.js?v=202611212029"></script>
+<script defer src="assets/js/system.js?v=202611222100"></script>
+<script defer src="assets/js/config.js?v=3"></script>
+<script defer src="assets/js/sitecfg.js?v=202611262200"></script>
+<script defer src="assets/js/sim.js?v=202611212029"></script>
+<script defer src="assets/js/charts.js?v=202611230000"></script>
+<script defer src="assets/js/scene3d.js?v=202611262200"></script>
+<script defer src="assets/js/home.js?v=202611262200"></script>
+<script defer src="assets/js/finance.js?v=2"></script>
+<script defer src="assets/js/grid.js?v=202611262100"></script>
+<script defer src="assets/js/install.js?v=202611212140"></script>
+<script defer src="assets/js/store.js?v=3"></script>
+<script defer src="assets/js/feedback.js?v=3"></script>
+<script defer src="assets/js/ui.js?v=202611262200"></script>
+<script>if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => { }));</script>
 </body>
 </html>

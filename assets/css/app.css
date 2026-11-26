@@ -542,3 +542,10 @@ input[type=range]{accent-color:var(--primary)}
 }
 /* Evita que la página se desplace hacia los lados en el celular */
 html,body{overflow-x:clip;max-width:100%}
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+/* contraste suficiente en el botón de idioma activo (fondo dorado) */
+.top .lang button.on{color:#13233f}
+/* Antes de que cargue el JavaScript: misma altura que después (evita saltos al cargar) */
+@media (max-width:1000px){.top #htools:not(:empty){display:none}}
+.summary:has(#summary:empty){display:none}
+#main:has(#p-home:empty){min-height:100vh}

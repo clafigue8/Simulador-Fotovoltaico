@@ -57,10 +57,17 @@
     }
     const ro = new ResizeObserver(resize); ro.observe(container);
     controls.addEventListener('change', () => need = true);
+    // solo se dibuja cuando la escena está en pantalla (ahorra batería y procesador)
+    const calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let lastTouch = -1e9; ['pointerdown', 'wheel', 'touchstart'].forEach(ev => container.addEventListener(ev, () => lastTouch = performance.now(), { passive: true }));
+    let onScreen = true; if (window.IntersectionObserver) new IntersectionObserver(e => { onScreen = e[e.length - 1].isIntersecting; if (onScreen) need = true; }).observe(container);
     function loop() {
-      if (!alive) return; requestAnimationFrame(loop); controls.update();
+      if (!alive) return; requestAnimationFrame(loop);
+      if (!onScreen || document.visibilityState !== 'visible') return;
+      controls.update();
       const nowT = performance.now();
-      if (cloudiness > 0.02 && document.visibilityState === 'visible' && nowT - (loop.t || 0) > (span > 120 ? 120 : 45)) { loop.t = nowT; clouds.children.forEach(c => { c.userData.a += c.userData.v; if (c.userData.a > Math.PI * 2.05) c.userData.a = Math.PI * 0.95; }); placeClouds(); need = true; }
+      // las nubes se mueven ~12 veces por segundo y se mueven al tocar la escena y se detienen tras 40 s sin tocarla
+      if (cloudiness > 0.02 && !calm && nowT - lastTouch < 40000 && nowT - (loop.t || 0) > (span > 120 ? 160 : 80)) { loop.t = nowT; clouds.children.forEach(c => { c.userData.a += c.userData.v; if (c.userData.a > Math.PI * 2.05) c.userData.a = Math.PI * 0.95; }); placeClouds(); need = true; }
       if (need || controls.autoRotate) { renderer.render(scene, camera); need = false; }
     }
     loop();

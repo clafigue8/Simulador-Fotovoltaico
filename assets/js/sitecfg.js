@@ -108,8 +108,8 @@
   function paint() {
     const D = DATA, lang = document.documentElement.lang === 'en' ? 'en' : 'es';
     const h1 = document.querySelector('.top .brand h1'), p = document.querySelector('.top .brand p');
-    if (h1 && D.textos.titulo) { h1.dataset.es = D.textos.titulo.es; h1.dataset.en = D.textos.titulo.en || D.textos.titulo.es; h1.innerHTML = h1.dataset[lang]; }
-    if (p && D.textos.subtitulo) { p.dataset.es = D.textos.subtitulo.es; p.dataset.en = D.textos.subtitulo.en || D.textos.subtitulo.es; p.innerHTML = p.dataset[lang]; }
+    if (h1 && D.textos.titulo) { h1.dataset.es = D.textos.titulo.es; h1.dataset.en = D.textos.titulo.en || D.textos.titulo.es; if (h1.innerHTML !== h1.dataset[lang]) h1.innerHTML = h1.dataset[lang]; }
+    if (p && D.textos.subtitulo) { p.dataset.es = D.textos.subtitulo.es; p.dataset.en = D.textos.subtitulo.en || D.textos.subtitulo.es; if (p.innerHTML !== p.dataset[lang]) p.innerHTML = p.dataset[lang]; }
     let bar = document.getElementById('siteAviso');
     const msg = D.aviso && D.aviso.on ? (D.aviso[lang] || D.aviso.es) : '';
     if (!msg) { if (bar) bar.remove(); return; }

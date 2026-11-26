@@ -864,8 +864,8 @@
   }
   function setLang(l) {
     LANG = l === 'en' ? 'en' : 'es'; document.documentElement.lang = LANG;
-    document.title = L('Simulador Fotovoltaico', 'Photovoltaic Simulator');
-    document.querySelectorAll('[data-en]').forEach(el => { if (el.dataset.es == null) el.dataset.es = el.innerHTML; el.innerHTML = LANG === 'en' ? el.dataset.en : el.dataset.es; });
+    document.title = L('Simulador Fotovoltaico Honduras · Diseña tu sistema de paneles solares', 'Photovoltaic Simulator Honduras · Design your solar panel system');
+    document.querySelectorAll('[data-en]').forEach(el => { if (el.dataset.es == null) el.dataset.es = el.innerHTML; const t = LANG === 'en' ? el.dataset.en : el.dataset.es; if (el.innerHTML !== t) el.innerHTML = t; });
     document.querySelectorAll('.lang button').forEach(b => b.classList.toggle('on', b.dataset.lang === LANG));
     try { localStorage.setItem('lang', LANG); } catch (e) { }
     try { const u = new URL(location.href); u.searchParams.set('lang', LANG); history.replaceState(null, '', u); } catch (e) { }
