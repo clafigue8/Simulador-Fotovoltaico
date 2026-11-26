@@ -543,9 +543,20 @@ input[type=range]{accent-color:var(--primary)}
 /* Evita que la página se desplace hacia los lados en el celular */
 html,body{overflow-x:clip;max-width:100%}
 .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-/* contraste suficiente en el botón de idioma activo (fondo dorado) */
-.top .lang button.on{color:#13233f}
 /* Antes de que cargue el JavaScript: misma altura que después (evita saltos al cargar) */
 @media (max-width:1000px){.top #htools:not(:empty){display:none}}
 .summary:has(#summary:empty){display:none}
 #main:has(#p-home:empty){min-height:100vh}
+
+/* ---------- Interacción de botones y tipografía (sin cambiar colores ni distribución) ---------- */
+html{-webkit-tap-highlight-color:transparent;text-rendering:optimizeLegibility}
+h1,h2,h3,h4{text-wrap:balance}
+p,.note,small{text-wrap:pretty}
+.btn,.seg button,.kinds button,.lang button,.themebtn,.tab,.menubtn,.tipbtn,.fnbt .btn,.revbox summary,details>summary{transition:background-color .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease,transform .12s ease}
+.btn:not(:disabled):active,.seg button:active,.kinds button:active,.lang button:active,.themebtn:active,.tab:active,.tipbtn:active{transform:scale(.96)}
+.btn.pri:not(:disabled):hover{box-shadow:0 6px 18px rgba(29,59,110,.28)}
+.kinds button:not(.on):hover{transform:translateY(-1px)}
+.btn:disabled,.btn[disabled]{cursor:not-allowed}
+.btn:focus-visible,.seg button:focus-visible,.kinds button:focus-visible,.lang button:focus-visible,.tab:focus-visible,summary:focus-visible{outline:2px solid var(--primary2);outline-offset:2px}
+input[type=range]{cursor:pointer;accent-color:var(--primary)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
