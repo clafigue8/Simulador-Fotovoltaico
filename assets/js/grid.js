@@ -82,8 +82,8 @@
           <div class="kpis" style="margin-top:14px">${kpi(L('Corriente de cortocircuito', 'Short-circuit current'), fx(s.Isc / 1000, 2), 'kA')}${kpi(L('Potencia de cortocircuito', 'Short-circuit power'), fx(s.Ssc / 1e6, 2), 'MVA')}${kpi(L('Relación de cortocircuito', 'Short-circuit ratio'), fx(s.Ssc / 1000 / Math.max(pvKW(), 0.1), 0), '', s.Ssc / 1000 / pvKW() < 20 ? 'bad' : '')}</div>
           <div id="gVolt"></div>
           <h4>${L('Tensiones permitidas (NT‑CD, Art. 15)', 'Allowed voltages (NT‑CD, Art. 15)')}</h4>
-          <table class="t"><thead><tr><th>${L('Servicio', 'Service')}</th><th>${L('Rango normal', 'Normal range')}</th><th>${L('Extremos', 'Extremes')}</th></tr></thead><tbody>
-            <tr><td>120 V</td><td class="num">114 – 126 V</td><td class="num">90 – 150 V</td></tr><tr><td>240 V</td><td class="num">228 – 252 V</td><td class="num">180 – 300 V</td></tr><tr><td>480 V</td><td class="num">456 – 504 V</td><td class="num">360 – 600 V</td></tr><tr><td>13,8 kV</td><td class="num">13,46 – 14,49 kV</td><td class="num">11,22 – 16,8 kV</td></tr><tr><td>34,5 kV</td><td class="num">33,64 – 36,23 kV</td><td class="num">27 – 42 kV</td></tr></tbody></table>
+          <div class="tscroll"><table class="t"><thead><tr><th>${L('Servicio', 'Service')}</th><th>${L('Rango normal', 'Normal range')}</th><th>${L('Extremos', 'Extremes')}</th></tr></thead><tbody>
+            <tr><td>120 V</td><td class="num">114 – 126 V</td><td class="num">90 – 150 V</td></tr><tr><td>240 V</td><td class="num">228 – 252 V</td><td class="num">180 – 300 V</td></tr><tr><td>480 V</td><td class="num">456 – 504 V</td><td class="num">360 – 600 V</td></tr><tr><td>13,8 kV</td><td class="num">13,46 – 14,49 kV</td><td class="num">11,22 – 16,8 kV</td></tr><tr><td>34,5 kV</td><td class="num">33,64 – 36,23 kV</td><td class="num">27 – 42 kV</td></tr></tbody></table></div>
           <p class="note">${L('Desbalance de tensión permitido en BT y MT: hasta 3 %. Flicker (Pst, IEC 61000‑3‑7): rango normal de 0 a 1.', 'Allowed voltage unbalance in LV and MV: up to 3 %. Flicker (Pst, IEC 61000‑3‑7): normal range 0 to 1.')}</p>
         </div>
         <div class="stack">

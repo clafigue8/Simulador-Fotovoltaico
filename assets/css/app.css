@@ -540,3 +540,5 @@ input[type=range]{accent-color:var(--primary)}
   .fnres{grid-template-columns:1fr 1fr 1fr;grid-template-areas:"l l l" "b e d"}
   .fnres .fnl{grid-area:l}.fnres .fnb{grid-area:b;text-align:left}.fnres .fne{grid-area:e}.fnres .fnd{grid-area:d}
 }
+/* Evita que la página se desplace hacia los lados en el celular */
+html,body{overflow-x:clip;max-width:100%}
