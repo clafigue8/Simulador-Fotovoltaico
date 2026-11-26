@@ -4,6 +4,8 @@ rules_version = '2';
 // - Cualquiera puede ENVIAR una opinión con el formato correcto.
 // - Cualquiera puede LEER los comentarios publicados (sin correos).
 // - Solo la administradora puede leer los mensajes completos, editarlos, moverlos y borrarlos.
+// - La configuración del sitio la lee cualquiera y solo la cambia la administradora.
+// - Las visitas se registran de forma anónima y solo las lee la administradora.
 service cloud.firestore {
   match /databases/{database}/documents {
     function isAdmin() {
@@ -29,6 +31,21 @@ service cloud.firestore {
     }
     match /config/{doc} {
       allow read, write: if isAdmin();
+    }
+    // Configuración del sitio (datos técnicos, equipos, textos, colores): todos la leen, solo la administradora la cambia
+    match /sitio/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    // Visitas anónimas: cualquiera registra una visita con el formato correcto; solo la administradora las lee
+    match /visitas/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['seccion', 'disp', 'ses', 'lang', 'fecha'])
+        && request.resource.data.seccion is string && request.resource.data.seccion.size() <= 20
+        && request.resource.data.disp in ['movil', 'escritorio']
+        && request.resource.data.ses is string && request.resource.data.ses.size() <= 24
+        && request.resource.data.lang in ['es', 'en']
+        && request.resource.data.fecha == request.time;
+      allow read, delete: if isAdmin();
     }
   }
 }

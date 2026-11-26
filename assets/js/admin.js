@@ -23,7 +23,7 @@
 
   function loginView(msg = '') {
     $('who').innerHTML = '';
-    $('adm').innerHTML = `<div class="card admlogin"><h3>Panel de administración</h3><p>Entra con tu cuenta de Google para revisar las opiniones del simulador.</p><button class="btn pri" id="gIn">Entrar con Google</button>${ST.PREVIEW ? '<p class="note2">Vista previa: Firebase aún no está configurado; se usan datos de ejemplo guardados en este navegador.</p>' : ''}${msg ? `<p class="admerr">${esc(msg)}</p>` : ''}</div>`;
+    $('adm').innerHTML = `<div class="card admlogin"><h3>Panel de administración</h3><p>Entra con tu cuenta de Google para administrar el simulador: opiniones, visitas, datos, equipos, textos y colores.</p><button class="btn pri" id="gIn">Entrar con Google</button>${ST.PREVIEW ? '<p class="note2">Vista previa: Firebase aún no está configurado; se usan datos de ejemplo guardados en este navegador.</p>' : ''}${msg ? `<p class="admerr">${esc(msg)}</p>` : ''}</div>`;
     $('gIn').onclick = async () => { try { await ST.signIn(); if (ST.PREVIEW) start({ displayName: 'Claudia (vista previa)' }); } catch (e) { loginView('No se pudo iniciar sesión.'); } };
   }
 
@@ -34,7 +34,18 @@
     $('adm').innerHTML = '<p style="padding:24px">Cargando…</p>';
     try { [ROWS, FOLDERS] = await Promise.all([ST.listAll(), ST.getFolders()]); }
     catch (e) { DENIED = true; await ST.signOut(); return loginView('Esta cuenta no tiene permiso de administración.'); }
-    render();
+    shell();
+  }
+
+  /* ---------- Secciones del panel ---------- */
+  const SECTIONS = [['opiniones', '💬', 'Opiniones'], ['visitas', '📊', 'Visitas'], ['datos', '⚙️', 'Datos técnicos'], ['equipos', '🔌', 'Equipos'], ['textos', '📝', 'Textos y avisos'], ['colores', '🎨', 'Colores']];
+  let SECTION = (() => { try { return sessionStorage.getItem('adm-sec') || 'opiniones'; } catch (e) { return 'opiniones'; } })();
+  function shell() {
+    const nuevos = ROWS.filter(r => r.estado === 'nuevo' && r.carpeta !== 'papelera').length;
+    $('adm').innerHTML = `<nav class="admnav">${SECTIONS.map(([k, ic, t]) => `<button data-sec="${k}" class="${SECTION === k ? 'on' : ''}"><span>${ic}</span>${t}${k === 'opiniones' && nuevos ? `<b>${nuevos}</b>` : ''}</button>`).join('')}<a class="admsite" href="./" target="_blank" rel="noopener">Ver el sitio ↗</a></nav><div id="admBody"></div><div class="toast" id="toast"></div>`;
+    document.querySelectorAll('[data-sec]').forEach(b => b.onclick = () => { SECTION = b.dataset.sec; try { sessionStorage.setItem('adm-sec', SECTION); } catch (e) { } shell(); });
+    if (SECTION === 'opiniones') render();
+    else window.ADMIN_SITE.render(SECTION, $('admBody'), toast);
   }
 
   function render() {
@@ -42,7 +53,7 @@
     const list = ROWS.filter(r => inFolder(r, CUR) && (TF === 'todos' || r.tipo === TF) && (!Q || (r.mensaje + ' ' + r.nombre + ' ' + (r.nota || '')).toLowerCase().includes(Q.toLowerCase())));
     const fItem = (k, ic, name, custom) => `<button class="fold ${CUR === k ? 'on' : ''}" data-f="${esc(k)}"><span>${ic}</span><span class="fn">${esc(name)}</span>${unread(k) ? `<b class="fb">${unread(k)}</b>` : `<i>${count(k) || ''}</i>`}${custom ? `<span class="fx"><span data-ren="${esc(k)}" title="Cambiar nombre">✏️</span><span data-delf="${esc(k)}" title="Borrar carpeta">✕</span></span>` : ''}</button>`;
     const curName = (FIXED.find(f => f[0] === CUR) || [0, '📁', CUR])[2];
-    $('adm').innerHTML = `
+    $('admBody').innerHTML = `
       <div class="kpis admk">
         <div class="kpi"><small>Mensajes</small><b>${ROWS.filter(r => r.carpeta !== 'papelera').length}</b></div>
         <div class="kpi"><small>Sin leer</small><b>${ROWS.filter(r => r.estado === 'nuevo' && r.carpeta !== 'papelera').length}</b></div>
@@ -65,8 +76,7 @@
           </div>
           ${list.length ? list.map(card).join('') : `<p class="empty">${CUR === 'papelera' ? 'La papelera está vacía.' : 'No hay mensajes aquí.'}</p>`}
         </section>
-      </div>
-      <div class="toast" id="toast"></div>`;
+      </div>`;
     bind(list);
   }
 

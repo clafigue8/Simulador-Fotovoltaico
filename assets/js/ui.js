@@ -102,7 +102,8 @@
     ['sim', 'Simulación', 'Simulation'], ['about', 'Metodología', 'Methodology'], ['install', 'Normativa y equipos', 'Regulations & equipment'], ['opinion', 'Opiniones y sugerencias', 'Feedback & suggestions']
   ];
   function renderTabs() {
-    $('tabs').innerHTML = TABS.map(([k, es, en], i) => `<button class="tab ${S.tab === k ? 'on' : ''}" data-tab="${k}"><span class="n">${i + 1}</span>${L(es, en)}</button>`).join('');
+    const hidden = (window.SITECFG && window.SITECFG.data.ocultas) || [];
+    $('tabs').innerHTML = TABS.filter(([k]) => k === 'home' || !hidden.includes(k)).map(([k, es, en], i) => `<button class="tab ${S.tab === k ? 'on' : ''}" data-tab="${k}"><span class="n">${i + 1}</span>${L(es, en)}</button>`).join('');
     $('tabs').querySelectorAll('.tab').forEach(b => b.onclick = () => go(b.dataset.tab));
     const cur = TABS.find(t => t[0] === S.tab); if ($('curTab') && cur) $('curTab').textContent = L(cur[1], cur[2]);
     document.querySelectorAll('.page').forEach(p => p.classList.toggle('on', p.id === 'p-' + S.tab));
@@ -118,7 +119,7 @@
     place(); mq.addEventListener ? mq.addEventListener('change', place) : mq.addListener(place);
   })();
   if ($('logoHome')) $('logoHome').onclick = e => { e.preventDefault(); go('home'); };
-  function go(tab) { menu(false); S.tab = tab; try { history.replaceState(null, '', '#' + tab + (LANG === 'en' ? '?lang=en' : '')); } catch (e) { } renderTabs(); renderPage(); window.scrollTo({ top: 0 }); }
+  function go(tab) { menu(false); if (tab !== 'home' && window.SITECFG && window.SITECFG.data.ocultas.includes(tab)) tab = 'home'; S.tab = tab; if (window.SITECFG) window.SITECFG.track(tab); try { history.replaceState(null, '', '#' + tab + (LANG === 'en' ? '?lang=en' : '')); } catch (e) { } renderTabs(); renderPage(); window.scrollTo({ top: 0 }); }
 
   function renderSummary() {
     const C = SIM.components(S), bm = C.bm;
@@ -321,7 +322,7 @@
   }
   function renderModCard() {
     const el = $('modCard'); if (!el) return;
-    const opts = window.MODULES.map((m, i) => [i, `${m.name.replace('Co., Ltd.', '').replace('Inc.', '')} · ${m.Pstc.toFixed(0)} W`]);
+    const opts = window.MODULES.map((m, i) => [i, `${m.name.replace('Co., Ltd.', '').replace('Inc.', '')} · ${m.Pstc.toFixed(0)} W`, m]).filter(o => !o[2].hidden || o[0] === S.modId);
     let h = `<h3>${L('Módulo fotovoltaico', 'PV module')}</h3><p class="sub">${L('Datos de hoja técnica (base de datos CEC). Los parámetros del modelo se ajustan automáticamente.', 'Datasheet values (CEC database). Model parameters are fitted automatically.')}</p>
       <select class="sel" id="modSel">${opts.map(([k, t]) => `<option value="${k}" ${S.modId === k ? 'selected' : ''}>${esc(t)}</option>`).join('')}<option value="custom" ${S.modId === 'custom' ? 'selected' : ''}>${L('Personalizado (celda genérica)', 'Custom (generic cell)')}</option></select>`;
     if (S.modId !== 'custom') {
@@ -621,7 +622,7 @@
     $('p-bat').innerHTML = `
       <div class="intro"><h2>${L('Almacenamiento en baterías', 'Battery storage')}</h2><p>${L('Elige la tecnología y arma el banco en serie y paralelo. El voltaje sigue el modelo de Shepherd modificado (Tremblay), con ley de Peukert y eficiencia coulómbica. Los valores son típicos de cada tecnología.', 'Choose the technology and build the bank in series and parallel. Voltage follows the modified Shepherd model (Tremblay), with Peukert law and coulombic efficiency. Values are typical for each technology.')}</p></div>
       <div class="card"><h3>${L('Catálogo', 'Catalog')}</h3><p class="sub">${L('Toca una opción para usarla en el sistema.', 'Tap an option to use it in the system.')}</p>
-        <div class="cards">${SYS.BATTERIES.map(x => `<button class="opt ${x.id === S.bat.id ? 'on' : ''}" data-bat="${x.id}"><span class="tag">${techN[x.tech]}</span><h5>${esc(L(x.name.es, x.name.en))}</h5><dl><dt>${L('Energía', 'Energy')}</dt><dd>${fx(x.V * x.C / 1000, 2)} kWh</dd><dt>${L('Profundidad de descarga', 'Depth of discharge')}</dt><dd>${fx(x.dod * 100, 0)} %</dd><dt>${L('Ciclos', 'Cycles')}</dt><dd>${x.cyc} @ ${fx(x.cycDod * 100, 0)} %</dd><dt>${L('Eficiencia', 'Efficiency')}</dt><dd>${fx(x.eta * 100, 0)} %</dd><dt>${L('Vida calendario', 'Calendar life')}</dt><dd>${x.life} ${L('años', 'years')}</dd><dt>${L('Peso', 'Weight')}</dt><dd>${x.mass} kg</dd></dl></button>`).join('')}</div>
+        <div class="cards">${SYS.BATTERIES.filter(x => !x.hidden || x.id === S.bat.id).map(x => `<button class="opt ${x.id === S.bat.id ? 'on' : ''}" data-bat="${x.id}"><span class="tag">${techN[x.tech]}</span><h5>${esc(L(x.name.es, x.name.en))}</h5><dl><dt>${L('Energía', 'Energy')}</dt><dd>${fx(x.V * x.C / 1000, 2)} kWh</dd><dt>${L('Profundidad de descarga', 'Depth of discharge')}</dt><dd>${fx(x.dod * 100, 0)} %</dd><dt>${L('Ciclos', 'Cycles')}</dt><dd>${x.cyc} @ ${fx(x.cycDod * 100, 0)} %</dd><dt>${L('Eficiencia', 'Efficiency')}</dt><dd>${fx(x.eta * 100, 0)} %</dd><dt>${L('Vida calendario', 'Calendar life')}</dt><dd>${x.life} ${L('años', 'years')}</dd><dt>${L('Peso', 'Weight')}</dt><dd>${x.mass} kg</dd></dl></button>`).join('')}</div>
       </div>
       <div class="grid g-side" style="margin-top:24px">
         <div class="card"><h3>${L('Configuración del banco', 'Bank configuration')}</h3>
@@ -673,7 +674,7 @@
           ${!S.ctl.lvdAuto ? F(L('SOC de desconexión', 'Disconnect SOC'), 'ctl.lvd', 0, 0.8, 0.01) : ''}
         </div>
         <div class="card"><h3>${L('Inversor', 'Inverter')}</h3>
-          <select class="sel" id="invSel">${SYS.INVERTERS.map(x => `<option value="${x.id}" ${x.id === S.inv.id ? 'selected' : ''}>${esc(L(x.name.es, x.name.en))}</option>`).join('')}</select>
+          <select class="sel" id="invSel">${SYS.INVERTERS.filter(x => !x.hidden || x.id === S.inv.id).map(x => `<option value="${x.id}" ${x.id === S.inv.id ? 'selected' : ''}>${esc(L(x.name.es, x.name.en))}</option>`).join('')}</select>
           ${inv.id !== 'none' ? `<div class="kv" style="margin-top:14px"><span>${L('Potencia nominal', 'Rated power')}</span><span>${fx(inv.P, 0)} W</span><span>${L('Eficiencia máxima', 'Peak efficiency')}</span><span>${fx(inv.eta * 100, 1)} %</span><span>${L('Consumo en vacío', 'No-load consumption')}</span><span>${fx(SYS.invParams(inv).P0, 1)} W</span><span>${L('Eficiencia a la carga pico', 'Efficiency at peak load')}</span><span>${fx(S.load.P / PinvIn * 100, 1)} %</span></div>
           ${Sw(L('Encendido las 24 h (consumo en vacío)', 'On 24 h (no-load consumption)'), 'inv.alwaysOn')}` : ''}
           <div id="invWarn"></div>
@@ -868,8 +869,9 @@
     document.querySelectorAll('.lang button').forEach(b => b.classList.toggle('on', b.dataset.lang === LANG));
     try { localStorage.setItem('lang', LANG); } catch (e) { }
     try { const u = new URL(location.href); u.searchParams.set('lang', LANG); history.replaceState(null, '', u); } catch (e) { }
-    $('foot').innerHTML = `${L('Seminario de Investigación · Ingeniería Eléctrica · Universidad Nacional Autónoma de Honduras', 'Research Seminar · Electrical Engineering · National Autonomous University of Honduras')}<br>Claudia Figueroa · Dennis Johan López · M.Sc. Daniel Flores<div class="footlinks"><a href="#opinion" id="footFb">💬 ${L('Opiniones y sugerencias', 'Feedback & suggestions')}</a><a href="admin.html" rel="nofollow">🔒 ${L('Administración', 'Admin')}</a></div>`;
+    $('foot').innerHTML = `${L('Seminario de Investigación · Ingeniería Eléctrica · Universidad Nacional Autónoma de Honduras', 'Research Seminar · Electrical Engineering · National Autonomous University of Honduras')}<br>${esc(window.SITECFG ? window.SITECFG.data.textos.autores : 'Claudia Figueroa · Dennis Johan López · M.Sc. Daniel Flores')}<div class="footlinks"><a href="#opinion" id="footFb">💬 ${L('Opiniones y sugerencias', 'Feedback & suggestions')}</a><a href="admin.html" rel="nofollow">🔒 ${L('Administración', 'Admin')}</a></div>`;
     if ($('footFb')) $('footFb').onclick = e => { e.preventDefault(); go('opinion'); };
+    if (window.SITECFG) window.SITECFG.paint();
     applyModule(); compute(); renderTabs(); renderSummary(); renderPage();
   }
   window.APP = { S, get LANG() { return LANG; }, L, fx, esc, css, kpi, chartBox, bindExports, go, refresh: () => refresh(), applyModule, loadTmy, useTmy, CITIES, renderSummary };
@@ -893,5 +895,9 @@
     LANG = l === 'en' ? 'en' : 'es';
     applyModule();
     loadTmy().finally(() => setLang(LANG));
+    if (window.SITECFG) {
+      window.SITECFG.track('home');
+      window.SITECFG.onChange = () => { const ext = window.PAGES_EXT || {}; if (ext.homeConfig) ext.homeConfig(); if (S.modId !== 'custom' && !window.MODULES[S.modId]) S.modId = 0; renderTabs(); setLang(LANG); if (S.tab !== 'home' && window.SITECFG.data.ocultas.includes(S.tab)) go('home'); };
+    }
   })();
 })();

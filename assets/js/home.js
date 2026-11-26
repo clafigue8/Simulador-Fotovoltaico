@@ -5,18 +5,11 @@
   'use strict';
   const EXT = window.PAGES_EXT = window.PAGES_EXT || {};
 
-  /* ---------- Datos regulatorios y tarifarios (Honduras) ---------- */
-  const TARIFF = {   // CREE, estructura tarifaria ENEE a partir de octubre de 2026
-    period: { es: 'octubre de 2026', en: 'October 2026' },
-    res: { fixed: 59.74, e1: 5.0031, e2: 6.5102, block: 50 },
-    bt: { fixed: 59.74, e: 6.5115 },
-    mt: { fixed: 2703.07, dem: 340.417, e: 4.3305 }
-  };
-  const EXCESS_USD_MWH = { bt: 92.50, mt: 111.27 };   // Acuerdo CREE-89-2026 (según pv magazine, 19/11/2026)
-  const FX_DEFAULT = 27.07;                          // BCH, venta, 12/11/2026
-
-  // Costo instalado de referencia (USD/Wp, editable). Parque solar: IRENA 2024, promedio mundial 691 USD/kW.
-  const COST = { res: 1.10, apt: 1.00, com: 0.85, gas: 0.90, farm: 0.69 };
+  /* ---------- Datos regulatorios, tarifarios y costos (editables desde el panel: ver sitecfg.js) ---------- */
+  const SC = window.SITECFG.data;
+  const TARIFF = SC.tarifas;            // CREE, estructura tarifaria ENEE
+  const EXCESS_USD_MWH = SC.excedentes; // USD/MWh, Acuerdo CREE-89-2026
+  const COST = SC.costos;               // USD/Wp instalado (parque: IRENA 2024)
   const KIND = {
     res: { kwh: 350, tilt: 20, fmt: 'res' }, apt: { kwh: 4000, tilt: 10, fmt: 'res' }, com: { kwh: 12000, tilt: 10, fmt: 'com' },
     gas: { kwh: 6000, tilt: 8, fmt: 'com' }, farm: { kwh: 0, tilt: 15, fmt: 'util' }
@@ -24,7 +17,7 @@
   const GASPROF = [.4, .35, .35, .35, .4, .6, .85, .95, 1, 1, 1, 1, 1, 1, 1, 1, 1, .95, .9, .85, .75, .6, .5, .45];
   const HOME = {
     kind: 'res', kwh: 350, bills: [350, 350, 350], dmax: 0, cover: 0.9, fmt: 'res', modId: null, invIdx: 'auto', tilt: 20, az: 180,
-    volt: 'bt', cost: { ...COST }, fx: FX_DEFAULT, lossDC: 7, mount: 'free', lawPct: 100, tar: { ...TARIFF.res }, wx: 'tmy', date: null, hour: 10.5, month: 3, day: 15, farmMW: 5, price: 111.27
+    volt: 'bt', cost: { ...COST }, fx: SC.fx, lossDC: SC.ley.perdidas, mount: 'free', lawPct: SC.ley.limite, tar: { ...TARIFF.res }, wx: 'tmy', date: null, hour: 10.5, month: 3, day: 15, farmMW: 5, price: 111.27
   };
   let scene = null, calc = null, anim = 0, lastT = 0;
 
@@ -37,7 +30,7 @@
   const L = (es, en) => A().L(es, en);
   const $ = id => document.getElementById(id);
 
-  function invs() { return window.INVERTERS_GRID.map((v, i) => ({ v, i })).filter(x => isRes() ? x.v.seg === 'res' : isFarm() ? x.v.type === 'string3' : true); }
+  function invs() { return window.INVERTERS_GRID.map((v, i) => ({ v, i })).filter(x => !x.v.hidden).filter(x => isRes() ? x.v.seg === 'res' : isFarm() ? x.v.type === 'string3' : true); }
 
   /* ---------- Modelo de inversor de Sandia ---------- */
   function sandia(v, Pdc, Vdc) {
@@ -236,7 +229,7 @@
             <div class="btns" style="margin-top:8px">${HOME.loc ? `<span class="badge ok">📍 ${L('Usando tu ubicación', 'Using your location')}</span><button class="btn sm" id="hLocOff">${L('Volver a elegir ciudad', 'Choose a city instead')}</button>` : `<button class="btn sm" id="hLocOn">📍 ${L('Usar mi ubicación (opcional)', 'Use my location (optional)')}</button>`}</div>
             ${HOME.loc ? `<small style="margin-top:6px">${L(`Coordenadas ${HOME.loc.lat.toFixed(4)}, ${HOME.loc.lon.toFixed(4)} · clima de ${A().CITIES[S.site.city].name} (la ciudad con datos más cercana). Solo se usan en tu navegador.`, `Coordinates ${HOME.loc.lat.toFixed(4)}, ${HOME.loc.lon.toFixed(4)} · weather from ${A().CITIES[S.site.city].name} (nearest city with data). Used only in your browser.`)}</small>` : ''}</div></div>
           <div class="q"><span class="qn">4</span><div><b>${L('¿Qué panel solar?', 'Which solar panel?')}</b><small>${L('Elige el formato; así se venden hoy.', 'Choose the format; this is how they are sold today.')}</small>${seg('fmt', [['res', L('Residencial', 'Residential')], ['com', L('Comercial', 'Commercial')], ['util', L('Gran escala', 'Utility')]], HOME.fmt)}
-            <select class="sel" id="hMod" style="margin-top:8px">${(() => { const t = window.MODULES[typIdx(HOME.fmt)], ns = { res: [36, 60], com: [72], util: [72] }[HOME.fmt]; return `<option value="typ" ${HOME.modId == null ? 'selected' : ''}>${L('Típico 2026', 'Typical 2026')} · ${t.Pstc} W${KIND[HOME.kind].fmt === HOME.fmt ? ' · ' + L('recomendado', 'recommended') : ''}</option>` + window.MODULES.slice(0, window.MODULES_TYPICAL_START).map((m, i) => ({ m, i })).filter(x => x.m.fmts ? x.m.fmts.includes(HOME.fmt) : ns.includes(x.m.Ns)).sort((a, b) => b.m.Pstc - a.m.Pstc).map(x => `<option value="${x.i}" ${x.i === HOME.modId ? 'selected' : ''}>${esc(x.m.name.replace(/Co\., Ltd\.|Inc\.|Green Energy Technology/g, ''))} · ${x.m.Pstc.toFixed(0)} W</option>`).join(''); })()}</select>
+            <select class="sel" id="hMod" style="margin-top:8px">${(() => { const t = window.MODULES[typIdx(HOME.fmt)], ns = { res: [36, 60], com: [72], util: [72] }[HOME.fmt]; return `<option value="typ" ${HOME.modId == null ? 'selected' : ''}>${L('Típico 2026', 'Typical 2026')} · ${t.Pstc} W${KIND[HOME.kind].fmt === HOME.fmt ? ' · ' + L('recomendado', 'recommended') : ''}</option>` + window.MODULES.map((m, i) => ({ m, i })).filter(x => (x.i < window.MODULES_TYPICAL_START || x.m.custom) && !x.m.hidden).filter(x => x.m.fmts ? x.m.fmts.includes(HOME.fmt) : ns.includes(x.m.Ns)).sort((a, b) => b.m.Pstc - a.m.Pstc).map(x => `<option value="${x.i}" ${x.i === HOME.modId ? 'selected' : ''}>${esc(x.m.name.replace(/Co\., Ltd\.|Inc\.|Green Energy Technology/g, ''))} · ${x.m.Pstc.toFixed(0)} W</option>`).join(''); })()}</select>
             ${(() => { const mm = curMod(), pr = window.PRICE.localUSDW; return `<p class="note" style="margin:0">${mm.Pstc.toFixed(0)} W · ${fx(mm.A, 2)} m² · ${fx(mm.Pstc / mm.A / 10, 1)} %${mm.typical ? ` · ≈ USD ${Math.round(mm.Pstc * pr[0])}–${Math.round(mm.Pstc * pr[1])} ${L('por panel', 'per panel')} · ${mm.brands}` : ''}</p>`; })()}</div></div>
           <div class="q"><span class="qn">5</span><div><b>${L('¿Qué inversor?', 'Which inverter?')}</b><small>${L('Modelos del mercado (base de datos CEC).', 'Market models (CEC database).')}</small>
             <select class="sel" id="hInv"><option value="auto" ${HOME.invIdx === 'auto' ? 'selected' : ''}>${L('Automático (recomendado)', 'Automatic (recommended)')}</option>${iv.map(x => `<option value="${x.i}" ${x.i === HOME.invIdx ? 'selected' : ''}>${esc(x.v.name)} · ${fx(x.v.Paco / 1000, 1)} kW · ${x.v.Vac} V${x.v.ph === 3 ? ' 3φ' : ''}</option>`).join('')}</select></div></div>
@@ -537,6 +530,8 @@
     A().applyModule(); A().refresh(); A().go('gen');
   }
 
+  // la configuración del sitio cambió (desde el panel): se actualizan los valores por defecto de Inicio
+  EXT.homeConfig = () => { HOME.fx = SC.fx; HOME.cost = { ...COST }; HOME.tar = { ...TARIFF.res }; HOME.lawPct = SC.ley.limite; HOME.lossDC = SC.ley.perdidas; if (HOME.modId != null && (!window.MODULES[HOME.modId] || window.MODULES[HOME.modId].hidden)) HOME.modId = null; if (HOME.invIdx !== 'auto' && (!window.INVERTERS_GRID[HOME.invIdx] || window.INVERTERS_GRID[HOME.invIdx].hidden)) HOME.invIdx = 'auto'; calc = null; };
   EXT.homeState = () => ({ HOME, calc });
   EXT.homeCompute = () => compute();
   EXT.lawChecks = c => lawChecks(c);

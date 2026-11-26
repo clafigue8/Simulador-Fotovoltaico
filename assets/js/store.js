@@ -8,7 +8,8 @@
 (function () {
   'use strict';
   const CFG = (window.SITE_CONFIG || {}).firebase || {};
-  const PREVIEW = !CFG.apiKey || /PEGAR_AQUI/.test(CFG.apiKey);
+  // vista previa: sin configurar, o al abrir el archivo local con ?demo (para pruebas)
+  const PREVIEW = !CFG.apiKey || /PEGAR_AQUI/.test(CFG.apiKey) || (location.protocol === 'file:' && /demo/.test(location.search));
   const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
   let fb = null;
   async function sdk() {
@@ -92,6 +93,28 @@
       const { fs, db } = await sdk();
       if (row.publicado) await fs.deleteDoc(fs.doc(db, 'publicas', row.id));
       await fs.deleteDoc(fs.doc(db, 'opiniones', row.id));
+    },
+    // Configuración del sitio (documento sitio/config con el JSON completo)
+    async getSite() {
+      if (PREVIEW) { try { return JSON.parse(localStorage.getItem('sitio-demo') || '{}'); } catch (e) { return {}; } }
+      const { fs, db } = await sdk(); const d = await fs.getDoc(fs.doc(db, 'sitio', 'config'));
+      return d.exists() && d.data().json ? JSON.parse(d.data().json) : {};
+    },
+    async setSite(cfg) {
+      if (PREVIEW) { localStorage.setItem('sitio-demo', JSON.stringify(cfg)); return; }
+      const { fs, db } = await sdk(); await fs.setDoc(fs.doc(db, 'sitio', 'config'), { json: JSON.stringify(cfg), actualizado: fs.serverTimestamp() });
+    },
+    // Visitas de los últimos días
+    async listVisits(days = 30) {
+      if (PREVIEW) {
+        const out = [], secs = ['home', 'home', 'home', 'mount', 'gen', 'iv', 'site', 'opinion', 'install', 'sim'];
+        for (let d = days - 1; d >= 0; d--) { const n = 4 + Math.round(10 * Math.abs(Math.sin(d * 1.7)) + (d < 7 ? 6 : 0)); for (let k = 0; k < n; k++) { const t = new Date(Date.now() - d * 864e5 - k * 3.6e6); const ses = 's' + d + '-' + Math.floor(k / 2); out.push({ fecha: t.toISOString(), seccion: secs[(k * 7 + d) % secs.length], disp: (k + d) % 3 ? 'movil' : 'escritorio', ses, lang: k % 5 ? 'es' : 'en' }); } }
+        return out;
+      }
+      const { fs, db } = await sdk();
+      const since = fs.Timestamp.fromDate(new Date(Date.now() - days * 864e5));
+      const s = await fs.getDocs(fs.query(fs.collection(db, 'visitas'), fs.where('fecha', '>=', since), fs.orderBy('fecha', 'desc')));
+      return s.docs.map(d => ({ ...d.data(), fecha: iso(d.data().fecha) }));
     },
     async getFolders() {
       if (PREVIEW) return mock.get().folders;
