@@ -7,9 +7,11 @@
    ===================================================================== */
 window.SITE_CONFIG = {
   firebase: {
-    apiKey: 'PEGAR_AQUI',
-    authDomain: 'PEGAR_AQUI.firebaseapp.com',
-    projectId: 'PEGAR_AQUI',
-    appId: 'PEGAR_AQUI'
+    apiKey: 'AIzaSyDi_BPT8Hs_sJe1jaWx5jiJ3gj21e0IUhc',
+    authDomain: 'simuladorfotovoltaico.firebaseapp.com',
+    projectId: 'simuladorfotovoltaico',
+    storageBucket: 'simuladorfotovoltaico.firebasestorage.app',
+    messagingSenderId: '788665411334',
+    appId: '1:788665411334:web:68ae8c62d26da103896087'
   }
 };
