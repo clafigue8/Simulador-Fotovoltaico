@@ -258,6 +258,7 @@
 
         <div class="card"><h3>${L('Instalación y normativa', 'Installation and regulations')}</h3><div id="hLaw"></div><div class="btns" style="margin-top:14px"><button class="btn pri" id="hMountGo">${L('Ver montaje 3D y diagrama unifilar →', 'See 3D installation and single-line diagram →')}</button><button class="btn" id="hLawGo">${L('Normativa y equipos →', 'Regulations and equipment →')}</button></div></div>
       </div>
+      <div id="hFin" style="margin-top:24px"></div>
       <div class="card" style="margin-top:24px"><div class="chead"><div><h3>${L('¿Quieres ver el detalle técnico?', 'Want the technical detail?')}</h3><p class="sub">${L('Lleva este diseño al simulador completo: curvas, sombras, MPPT, baterías, red eléctrica y simulación anual.', 'Take this design to the full simulator: curves, shading, MPPT, batteries, power grid and annual simulation.')}</p></div><div class="btns"><button class="btn" id="hGrid">${L('Red, armónicos y motores →', 'Grid, harmonics and motors →')}</button><button class="btn pri" id="hGo">${L('Abrir simulación detallada →', 'Open detailed simulation →')}</button></div></div>
         <p class="note">${L(`Tarifas de la ENEE publicadas por la CREE (vigentes desde ${TARIFF.period.es}). Producción calculada hora por hora con datos PVGIS, pérdidas del ${fx(HOME.lossDC, 1)} % en CC y la eficiencia del inversor elegido. Valores orientativos: un diseño definitivo requiere visita técnica.`, `ENEE tariffs published by CREE (in force since ${TARIFF.period.en}). Production computed hour by hour with PVGIS data, ${fx(HOME.lossDC, 1)} % DC losses and the selected inverter efficiency. Indicative values: a final design requires a site visit.`)}</p></div>`;
     bind();
@@ -354,6 +355,7 @@
     $('hLaw').innerHTML = `<div class="kpis">${kpi(L('Requisitos legales', 'Legal requirements'), okN + ' / ' + lw.length, L('cumplidos', 'met'), okN === lw.length ? 'ok' : 'bad')}</div><p class="note">${L('Revisión del Reglamento de la Ley General de la Industria Eléctrica (Art. 47–50), protecciones, conductores, montaje en 3D y diagrama unifilar con las marcas sugeridas.', 'Review of the General Electricity Industry Law Regulation (Art. 47–50), protections, conductors, 3D installation and single-line diagram with suggested brands.')}</p>`;
     const months = L('Ene Feb Mar Abr May Jun Jul Ago Sep Oct Nov Dic', 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec').split(' '), xs = months.map((_, i) => i + 1), css = A().css;
     window.CHART.draw($('hMonC'), { xs, xmin: 0.5, xmax: 12.5, xticks: xs.map((x, i) => ({ x, label: months[i] })), series: [{ type: 'bar', ys: c.mon.map(x => x.load), color: css('--s6'), bw: 0.27, off: -0.15, label: L('Consumo', 'Consumption') }, { type: 'bar', ys: c.mon.map(x => x.pv), color: css('--s4'), bw: 0.27, off: 0.15, label: L('Producción solar', 'Solar production') }], xl: '', yl: 'kWh', compact: true, ymaxL: Math.max(...c.mon.map(x => Math.max(x.load, x.pv))) * 1.1 });
+    if (EXT.financeBox) EXT.financeBox($('hFin'), c);
     if (rebuild && scene) build3d();
     sunUpdate();
   }
@@ -404,6 +406,7 @@
     $('hLaw').innerHTML = `<p class="note" style="margin-top:0">${L('Un parque solar es una empresa generadora: se registra ante la CREE y vende su energía por contratos o en el mercado eléctrico.', 'A solar park is a generating company: it registers with CREE and sells its energy through contracts or the electricity market.')}</p>`;
     const months = L('Ene Feb Mar Abr May Jun Jul Ago Sep Oct Nov Dic', 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec').split(' '), xs = months.map((_, i) => i + 1);
     window.CHART.draw($('hMonC'), { xs, xmin: 0.5, xmax: 12.5, xticks: xs.map((x, i) => ({ x, label: months[i] })), series: [{ type: 'bar', ys: c.mon.map(x => x.pv / 1000), color: css('--s4'), bw: 0.5, label: L('Energía generada (MWh)', 'Energy generated (MWh)') }], xl: '', yl: 'MWh', compact: true, ymaxL: Math.max(...c.mon.map(x => x.pv / 1000)) * 1.1 });
+    if (EXT.financeBox) EXT.financeBox($('hFin'), c);
     if (rebuild && scene) build3d();
     sunUpdate();
   }

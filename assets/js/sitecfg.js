@@ -26,6 +26,8 @@
     fx: 27.07,                               // L/USD, BCH
     costos: { res: 1.10, apt: 1.00, com: 0.85, gas: 0.90, farm: 0.69 },   // USD/Wp instalado
     ley: { limite: 100, perdidas: 7 },
+    // Supuestos del análisis financiero (caso base)
+    finanzas: { horizonte: 25, degr: 0.5, om: 1, aumTarifa: 0, aumOM: 0, financ: 'prestamo', pctFin: 80, plazo: 5, tasa: 9, descuento: 10, reemplazoAnio: 13, reemplazoPct: 10 },
     textos: {
       titulo: { es: 'Simulador de Sistemas Fotovoltaicos', en: 'Photovoltaic System Simulator' },
       subtitulo: { es: 'Sistemas fotovoltaicos residenciales e industriales · Seminario de Investigación, Ingeniería Eléctrica UNAH', en: 'Residential and industrial PV systems · Research Seminar, Electrical Engineering, UNAH' },

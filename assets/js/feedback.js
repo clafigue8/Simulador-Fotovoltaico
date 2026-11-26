@@ -30,12 +30,13 @@
   EXT.reviewsBox = async function (el) {
     if (!el) return;
     const list = await publicList(), s = summary(list);
+    if (!el.isConnected) return;   // Inicio se redibujó mientras se leían los comentarios
     const head = s.nr ? `<span class="revavg">★ ${s.avg.toFixed(1)}</span><span>${L(`de 5 · ${s.nr} valoraciones`, `of 5 · ${s.nr} ratings`)}</span>` : `<span>${L('Opiniones de usuarios', 'User reviews')}</span>`;
     el.innerHTML = `<details class="card revbox"><summary>${head}<span class="revmore">${L(`Ver comentarios (${s.n})`, `See comments (${s.n})`)}</span></summary>
       <div class="revlist">${reviewHTML(list.slice(0, 8))}</div>
       <div class="btns" style="margin-top:12px"><button class="btn pri sm" id="revGo">${L('Dejar mi opinión', 'Leave my opinion')}</button>${list.length > 8 ? `<button class="btn sm" id="revAll">${L('Ver todas', 'See all')}</button>` : ''}</div></details>`;
     const go = () => A().go('opinion');
-    $('revGo').onclick = go; if ($('revAll')) $('revAll').onclick = go;
+    el.querySelector('#revGo').onclick = go; const all = el.querySelector('#revAll'); if (all) all.onclick = go;
   };
 
   /* ---------- Pestaña de opiniones ---------- */
