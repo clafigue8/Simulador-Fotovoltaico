@@ -99,14 +99,14 @@
   const TABS = [
     ['home', 'Inicio', 'Home'], ['mount', 'Montaje y diagrama', 'Installation & diagram'], ['gen', 'Generador FV', 'PV generator'], ['iv', 'Curvas y MPPT', 'Curves & MPPT'], ['site', 'Sitio y clima', 'Site & weather'],
     ['bat', 'Baterías', 'Batteries'], ['conv', 'Conversión y distribución', 'Conversion & distribution'], ['grid', 'Red eléctrica', 'Power grid'],
-    ['sim', 'Simulación', 'Simulation'], ['about', 'Metodología', 'Methodology'], ['install', 'Normativa y equipos', 'Regulations & equipment']
+    ['sim', 'Simulación', 'Simulation'], ['about', 'Metodología', 'Methodology'], ['install', 'Normativa y equipos', 'Regulations & equipment'], ['opinion', 'Opiniones y sugerencias', 'Feedback & suggestions']
   ];
   function renderTabs() {
     $('tabs').innerHTML = TABS.map(([k, es, en], i) => `<button class="tab ${S.tab === k ? 'on' : ''}" data-tab="${k}"><span class="n">${i + 1}</span>${L(es, en)}</button>`).join('');
     $('tabs').querySelectorAll('.tab').forEach(b => b.onclick = () => go(b.dataset.tab));
     const cur = TABS.find(t => t[0] === S.tab); if ($('curTab') && cur) $('curTab').textContent = L(cur[1], cur[2]);
     document.querySelectorAll('.page').forEach(p => p.classList.toggle('on', p.id === 'p-' + S.tab));
-    document.querySelector('.summary').style.display = ['home', 'grid', 'install', 'mount'].includes(S.tab) ? 'none' : '';
+    document.querySelector('.summary').style.display = ['home', 'grid', 'install', 'mount', 'opinion'].includes(S.tab) ? 'none' : '';
   }
   function menu(open) { document.body.classList.toggle('menu-open', open); const b = $('menuBtn'); if (b) b.setAttribute('aria-expanded', open ? 'true' : 'false'); }
   if ($('menuBtn')) { $('menuBtn').onclick = () => menu(!document.body.classList.contains('menu-open')); $('scrim').onclick = () => menu(false); document.addEventListener('keydown', e => { if (e.key === 'Escape') menu(false); }); }
@@ -853,7 +853,7 @@
   function renderPage() {
     stopPlay();
     const ext = window.PAGES_EXT || {};
-    ({ gen: pageGen, iv: pageIV, site: pageSite, bat: pageBat, conv: pageConv, sim: pageSim, about: pageAbout, home: ext.home, grid: ext.grid, install: ext.install, mount: ext.mount })[S.tab]();
+    ({ gen: pageGen, iv: pageIV, site: pageSite, bat: pageBat, conv: pageConv, sim: pageSim, about: pageAbout, home: ext.home, grid: ext.grid, install: ext.install, mount: ext.mount, opinion: ext.opinion })[S.tab]();
   }
   function refresh() {
     ensure(); compute(); renderSummary();
@@ -868,7 +868,8 @@
     document.querySelectorAll('.lang button').forEach(b => b.classList.toggle('on', b.dataset.lang === LANG));
     try { localStorage.setItem('lang', LANG); } catch (e) { }
     try { const u = new URL(location.href); u.searchParams.set('lang', LANG); history.replaceState(null, '', u); } catch (e) { }
-    $('foot').innerHTML = `${L('Seminario de Investigación · Ingeniería Eléctrica · Universidad Nacional Autónoma de Honduras', 'Research Seminar · Electrical Engineering · National Autonomous University of Honduras')}<br>Claudia Figueroa · Dennis Johan López · M.Sc. Daniel Flores`;
+    $('foot').innerHTML = `${L('Seminario de Investigación · Ingeniería Eléctrica · Universidad Nacional Autónoma de Honduras', 'Research Seminar · Electrical Engineering · National Autonomous University of Honduras')}<br>Claudia Figueroa · Dennis Johan López · M.Sc. Daniel Flores<div class="footlinks"><a href="#opinion" id="footFb">💬 ${L('Opiniones y sugerencias', 'Feedback & suggestions')}</a><a href="${(window.SITE_CONFIG || {}).paypal || '#'}" target="_blank" rel="noopener">☕ ${L('Apoyar con PayPal', 'Support with PayPal')}</a><a href="admin.html" rel="nofollow">🔒 ${L('Autores', 'Authors')}</a></div>`;
+    if ($('footFb')) $('footFb').onclick = e => { e.preventDefault(); go('opinion'); };
     applyModule(); compute(); renderTabs(); renderSummary(); renderPage();
   }
   window.APP = { S, get LANG() { return LANG; }, L, fx, esc, css, kpi, chartBox, bindExports, go, refresh: () => refresh(), applyModule, loadTmy, useTmy, CITIES, renderSummary };

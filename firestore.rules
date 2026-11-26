@@ -1,0 +1,25 @@
+rules_version = '2';
+// Reglas de seguridad de Firestore (se pegan en la consola de Firebase → Firestore → Reglas).
+// Cualquiera puede ENVIAR una opinión con el formato correcto; solo los 3 autores pueden leerlas,
+// cambiar su estado o borrarlas.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthor() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in ['autor1@gmail.com', 'autor2@gmail.com', 'autor3@gmail.com'];
+    }
+    match /opiniones/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['tipo', 'seccion', 'estrellas', 'mensaje', 'nombre', 'correo', 'idioma', 'estado', 'fecha'])
+        && request.resource.data.tipo in ['opinion', 'sugerencia', 'error', 'pregunta']
+        && request.resource.data.mensaje is string
+        && request.resource.data.mensaje.size() >= 4 && request.resource.data.mensaje.size() <= 2000
+        && request.resource.data.nombre is string && request.resource.data.nombre.size() <= 80
+        && request.resource.data.correo is string && request.resource.data.correo.size() <= 120
+        && request.resource.data.estrellas is int && request.resource.data.estrellas >= 0 && request.resource.data.estrellas <= 5
+        && request.resource.data.estado == 'nuevo'
+        && request.resource.data.fecha == request.time;
+      allow read, update, delete: if isAuthor();
+    }
+  }
+}
