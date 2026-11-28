@@ -152,6 +152,7 @@
         ${card('🏷️ Encabezado del sitio', txt('Título (español)', 'textos.titulo.es') + txt('Título (inglés)', 'textos.titulo.en') + area('Subtítulo (español)', 'textos.subtitulo.es') + area('Subtítulo (inglés)', 'textos.subtitulo.en'))}
         ${card('👥 Pie de página', txt('Autores', 'textos.autores', 'Nombre · Nombre · Nombre'), 'Aparece al final de todas las páginas.')}
         ${card('📢 Aviso en la parte superior', `<label class="af acheck"><input type="checkbox" data-p="aviso.on" ${W.aviso.on ? 'checked' : ''}><span>Mostrar el aviso en el sitio</span></label><label class="af"><span>Tipo</span><select class="sel" data-p="aviso.tipo"><option value="info" ${W.aviso.tipo !== 'importante' ? 'selected' : ''}>📢 Informativo</option><option value="importante" ${W.aviso.tipo === 'importante' ? 'selected' : ''}>⚠️ Importante</option></select></label>` + area('Texto (español)', 'aviso.es', 'Ej. Nueva versión: ahora puedes ver el clima real del día.') + area('Texto (inglés)', 'aviso.en', 'Optional English version'), 'Ideal para anunciar novedades, mantenimiento o la presentación del seminario.')}
+        ${card('🚧 Mensaje «en construcción»', `<label class="af acheck"><input type="checkbox" data-p="construccion.on" ${W.construccion && W.construccion.on ? 'checked' : ''}><span>Mostrar el mensaje al abrir el sitio</span></label>` + area('Texto (español)', 'construccion.es') + area('Texto (inglés)', 'construccion.en'), 'Aparece como ventana emergente una vez por visita. Desmárcalo cuando el simulador esté terminado.')}
         ${card('🗂️ Pestañas del menú', `<p class="asub">Desmarca las que no quieras mostrar. Inicio siempre se muestra.</p>${TABS.map(([k, t]) => `<label class="af acheck"><input type="checkbox" data-tab="${k}" ${W.ocultas.includes(k) ? '' : 'checked'}><span>${t}</span></label>`).join('')}`)}
       </div>
       ${saveBar('svT', 'rsT')}`;
@@ -159,7 +160,7 @@
     el.querySelectorAll('[data-p="aviso.tipo"]').forEach(s => s.onchange = () => { W.aviso.tipo = s.value; $('svT-d').textContent = '● Cambios sin guardar'; });
     el.querySelectorAll('[data-tab]').forEach(c => c.onchange = () => { const h = new Set(W.ocultas); c.checked ? h.delete(c.dataset.tab) : h.add(c.dataset.tab); W.ocultas = [...h]; $('svT-d').textContent = '● Cambios sin guardar'; });
     $('svT').onclick = async () => { try { await save(); textos(el); } catch (e) { TOAST('No se pudo guardar.'); } };
-    $('rsT').onclick = async () => { if (!confirm('¿Volver a los textos originales, quitar el aviso y mostrar todas las pestañas?')) return; W.textos = SC.clone(SC.DEFAULTS.textos); W.aviso = SC.clone(SC.DEFAULTS.aviso); W.ocultas = []; await save('Textos originales restaurados.'); textos(el); };
+    $('rsT').onclick = async () => { if (!confirm('¿Volver a los textos originales, quitar el aviso y mostrar todas las pestañas?')) return; W.textos = SC.clone(SC.DEFAULTS.textos); W.aviso = SC.clone(SC.DEFAULTS.aviso); W.construccion = SC.clone(SC.DEFAULTS.construccion); W.ocultas = []; await save('Textos originales restaurados.'); textos(el); };
   }
 
   /* =================== 🎨 Colores =================== */

@@ -34,6 +34,8 @@
       autores: 'Claudia Figueroa · Dennis Johan López · M.Sc. Daniel Flores'
     },
     aviso: { on: false, tipo: 'info', es: '', en: '' },
+    // Mensaje emergente al abrir el sitio (una vez por visita)
+    construccion: { on: true, es: 'Este simulador está en proceso de construcción. Estamos agregando funciones y revisando los cálculos, así que algunos resultados pueden cambiar. ¡Gracias por probarlo!', en: 'This simulator is under construction. We are adding features and reviewing the calculations, so some results may change. Thanks for trying it!' },
     ocultas: [],
     colores: null,   // null = paleta original
     equipos: { paneles: [], inversores: [], baterias: [], aislados: [], ocultos: { paneles: [], inversores: [], baterias: [], aislados: [] } }
@@ -104,12 +106,31 @@
 .logo{background:linear-gradient(135deg,${c.primary2},${c.primary})!important}`;
   }
 
+  /* ---------- Mensaje emergente "en construcción" (una vez por visita) ---------- */
+  function building(lang) {
+    const B = DATA.construccion || {};
+    if (!B.on || document.body.classList.contains('adminpage')) return;
+    let seen = false; try { seen = sessionStorage.getItem('construccion-visto') === '1'; } catch (e) { }
+    if (seen || document.getElementById('buildDlg')) return;
+    const esc = t => String(t || '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+    const d = document.createElement('dialog'); d.id = 'buildDlg'; d.className = 'builddlg';
+    d.setAttribute('aria-labelledby', 'buildT');
+    d.innerHTML = `<div class="bicon" aria-hidden="true">🚧</div><h2 id="buildT">${lang === 'en' ? 'Under construction' : 'Simulador en construcción'}</h2><p>${esc(B[lang] || B.es)}</p><button type="button" class="btn pri" id="buildOk">${lang === 'en' ? 'Got it' : 'Entendido'}</button>`;
+    document.body.appendChild(d);
+    const close = () => { try { sessionStorage.setItem('construccion-visto', '1'); } catch (e) { } d.close(); d.remove(); };
+    d.querySelector('#buildOk').onclick = close;
+    d.addEventListener('cancel', e => { e.preventDefault(); close(); });
+    d.addEventListener('click', e => { if (e.target === d) close(); });
+    if (d.showModal) d.showModal(); else d.setAttribute('open', '');
+  }
+
   /* ---------- Textos, aviso y pestañas ---------- */
   function paint() {
     const D = DATA, lang = document.documentElement.lang === 'en' ? 'en' : 'es';
     const h1 = document.querySelector('.top .brand h1'), p = document.querySelector('.top .brand p');
     if (h1 && D.textos.titulo) { h1.dataset.es = D.textos.titulo.es; h1.dataset.en = D.textos.titulo.en || D.textos.titulo.es; if (h1.innerHTML !== h1.dataset[lang]) h1.innerHTML = h1.dataset[lang]; }
     if (p && D.textos.subtitulo) { p.dataset.es = D.textos.subtitulo.es; p.dataset.en = D.textos.subtitulo.en || D.textos.subtitulo.es; if (p.innerHTML !== p.dataset[lang]) p.innerHTML = p.dataset[lang]; }
+    building(lang);
     let bar = document.getElementById('siteAviso');
     const msg = D.aviso && D.aviso.on ? (D.aviso[lang] || D.aviso.es) : '';
     if (!msg) { if (bar) bar.remove(); return; }
