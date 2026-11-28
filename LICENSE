@@ -1,21 +1,31 @@
-MIT License
+Copyright (c) 2026 Claudia Figueroa, Dennis Johan López y M.Sc. Daniel Flores.
+Todos los derechos reservados. / All rights reserved.
 
-Copyright (c) 2026 Claudia Figueroa, Dennis Johan López y M.Sc. Daniel Flores
+ESPAÑOL
+El código fuente, el diseño, los textos, los gráficos y los modelos de cálculo del
+Simulador de Sistemas Fotovoltaicos (simuladorfotovoltaico.online) son propiedad de sus
+autores y están protegidos por las leyes de derechos de autor.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Se permite únicamente usar el simulador en línea, sin costo, con fines personales,
+educativos o académicos. Queda prohibido, sin autorización previa y por escrito de los
+autores: copiar, reproducir, modificar, traducir, redistribuir, publicar, sublicenciar,
+vender o crear obras derivadas de todo o parte del código fuente, del diseño o de los
+modelos de cálculo, así como alojar copias del sitio en otros dominios.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Para citar el trabajo en publicaciones académicas, se pide hacer referencia al sitio y a
+sus autores. Para solicitar autorización, use la sección «Opiniones y sugerencias» del sitio.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Los componentes de terceros conservan sus propias licencias: three.js y OrbitControls
+(licencia MIT, Copyright 2010-2022 Three.js Authors), la tipografía Inter (SIL Open Font
+License) y los datos de PVGIS, NASA POWER, Open-Meteo, la base de datos de la CEC, la CREE,
+la ENEE y el BCH, según sus propios términos.
+
+ENGLISH
+The source code, design, text, graphics and calculation models of the Photovoltaic System
+Simulator are the property of their authors and are protected by copyright law. You may
+only use the online simulator, free of charge, for personal, educational or academic
+purposes. Copying, reproducing, modifying, translating, redistributing, publishing,
+sublicensing, selling or creating derivative works from all or part of the source code,
+design or calculation models, or hosting copies of the site on other domains, is
+prohibited without the authors' prior written permission. Third-party components keep
+their own licenses as listed above.

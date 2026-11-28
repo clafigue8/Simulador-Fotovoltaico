@@ -1,3 +1,4 @@
+/* © 2026 Claudia Figueroa, Dennis Johan López y M.Sc. Daniel Flores · Simulador de Sistemas Fotovoltaicos. Todos los derechos reservados. Prohibida su copia, modificación o redistribución sin autorización escrita. */
 /* =====================================================================
    Recurso solar y clima
    - Posición solar: declinación de Cooper, ecuación del tiempo (Spencer),

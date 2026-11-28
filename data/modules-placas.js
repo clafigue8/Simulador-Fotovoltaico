@@ -1,3 +1,4 @@
+/* © 2026 Claudia Figueroa, Dennis Johan López y M.Sc. Daniel Flores · Simulador de Sistemas Fotovoltaicos. Todos los derechos reservados. Prohibida su copia, modificación o redistribución sin autorización escrita. */
 /* Paneles comerciales con datos de placa (STC) fotografiados en campo.
    Coeficientes de temperatura y dimensiones: valores típicos de la ficha técnica de cada serie
    (no aparecen en la placa); verificar con la hoja del fabricante. */

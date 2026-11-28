@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://www.gstatic.com https://fonts.googleapis.com https://fonts.gstatic.com https://api.open-meteo.com https://archive-api.open-meteo.com https://power.larc.nasa.gov; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<script>if(location.protocol==='http:'&&/simuladorfotovoltaico\.online$/.test(location.hostname))location.replace('https://simuladorfotovoltaico.online'+location.pathname+location.search+location.hash)</script>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://www.gstatic.com https://fonts.googleapis.com https://fonts.gstatic.com https://api.open-meteo.com https://archive-api.open-meteo.com https://power.larc.nasa.gov; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; upgrade-insecure-requests; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
@@ -10,19 +11,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/app.css?v=202611281200">
+<link rel="stylesheet" href="assets/css/app.css?v=202611281400">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('tema')||'light'}catch(e){document.documentElement.dataset.theme='light'}</script>
 </head>
 <body class="adminpage">
 <header class="top"><div class="wrap"><div class="brand"><a class="logo" href="./" title="Volver al simulador"><svg width="34" height="34" viewBox="0 0 32 32"><circle cx="22" cy="9" r="4.5" fill="#e3a63c"/><path d="M3 27l5.5-12h15L28 27z" fill="#9cbcf0"/><path d="M8.5 15L3 27M13.5 15l-2 12M18.5 15l2 12M23.5 15L28 27M6 21h20" stroke="#1d3b6e" stroke-width="1.2"/></svg></a><div><h1>Panel de administración</h1><p>Simulador Fotovoltaico</p></div></div><div class="spacer"></div><span id="who"></span></div></header>
 <main class="wrap" id="adm"></main>
-<script src="data/modules.js?v=202611212029"></script>
+<script src="data/modules.js?v=202611281400"></script>
 <script src="data/modules-placas.js?v=3"></script>
-<script src="data/modules-2026.js?v=202611212029"></script>
-<script src="data/inverters.js?v=202611221930"></script>
-<script src="assets/js/system.js?v=202611222100"></script>
+<script src="data/modules-2026.js?v=202611281400"></script>
+<script src="data/inverters.js?v=202611281400"></script>
+<script src="assets/js/system.js?v=202611281400"></script>
 <script src="assets/js/config.js?v=3"></script>
-<script src="assets/js/sitecfg.js?v=202611281000"></script>
+<script src="assets/js/sitecfg.js?v=202611281400"></script>
 <script src="assets/js/store.js?v=3"></script>
 <script src="assets/js/admin-site.js?v=4"></script>
 <script src="assets/js/admin.js?v=3"></script>

@@ -1,3 +1,4 @@
+/* © 2026 Claudia Figueroa, Dennis Johan López y M.Sc. Daniel Flores · Simulador de Sistemas Fotovoltaicos. Todos los derechos reservados. Prohibida su copia, modificación o redistribución sin autorización escrita. */
 /* =====================================================================
    Análisis financiero y escenarios ("¿qué pasa si…?") del diseño de Inicio.
    Flujo de caja anual del dueño del sistema:

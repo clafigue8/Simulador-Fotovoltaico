@@ -1,3 +1,4 @@
+/* © 2026 Claudia Figueroa, Dennis Johan López y M.Sc. Daniel Flores · Simulador de Sistemas Fotovoltaicos. Todos los derechos reservados. Prohibida su copia, modificación o redistribución sin autorización escrita. */
 /* =====================================================================
    Panel de administración: secciones del sitio
    📊 Visitas · ⚙️ Datos técnicos · 🔌 Equipos · 📝 Textos y avisos · 🎨 Colores

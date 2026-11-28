@@ -1,3 +1,4 @@
+/* © 2026 Claudia Figueroa, Dennis Johan López y M.Sc. Daniel Flores · Simulador de Sistemas Fotovoltaicos. Todos los derechos reservados. Prohibida su copia, modificación o redistribución sin autorización escrita. */
 /* =====================================================================
    Configuración de Firebase (opiniones, valoraciones y panel de administración).
    Consola de Firebase → Configuración del proyecto → Tus apps → Web.

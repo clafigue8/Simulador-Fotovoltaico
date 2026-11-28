@@ -1,3 +1,4 @@
+/* © 2026 Claudia Figueroa, Dennis Johan López y M.Sc. Daniel Flores · Simulador de Sistemas Fotovoltaicos. Todos los derechos reservados. Prohibida su copia, modificación o redistribución sin autorización escrita. */
 /* Paneles típicos del mercado 2025–2026 por formato (valores representativos de fichas técnicas TOPCon tipo N;
    no corresponden a una marca en particular). Dimensiones y potencias según guías de formatos de 2026;
    precios FOB de referencia: InfoLink (oct. 2026) y Anza (T1 2026). */

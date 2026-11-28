@@ -1,3 +1,4 @@
+/* © 2026 Claudia Figueroa, Dennis Johan López y M.Sc. Daniel Flores · Simulador de Sistemas Fotovoltaicos. Todos los derechos reservados. Prohibida su copia, modificación o redistribución sin autorización escrita. */
 /* Módulos comerciales: datos de hoja técnica (STC) tomados de la base de datos CEC (California Energy Commission),
    distribuida con SAM (NREL) y pvlib-python, versión 2019-03-05. */
 window.MODULES=[

@@ -1,3 +1,4 @@
+/* © 2026 Claudia Figueroa, Dennis Johan López y M.Sc. Daniel Flores · Simulador de Sistemas Fotovoltaicos. Todos los derechos reservados. Prohibida su copia, modificación o redistribución sin autorización escrita. */
 /* =====================================================================
    Normativa e instalación: ley de Honduras, montaje 3D, diagrama unifilar,
    dimensionamiento de protecciones y conductores, y equipos sugeridos

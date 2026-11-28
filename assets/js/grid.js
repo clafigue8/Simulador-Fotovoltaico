@@ -1,3 +1,4 @@
+/* © 2026 Claudia Figueroa, Dennis Johan López y M.Sc. Daniel Flores · Simulador de Sistemas Fotovoltaicos. Todos los derechos reservados. Prohibida su copia, modificación o redistribución sin autorización escrita. */
 /* =====================================================================
    Red eléctrica nacional: punto de conexión, elevación de tensión,
    armónicos (NT de Calidad de Distribución, CREE 2017) y arranque de motores

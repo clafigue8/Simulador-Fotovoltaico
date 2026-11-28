@@ -1,3 +1,4 @@
+/* © 2026 Claudia Figueroa, Dennis Johan López y M.Sc. Daniel Flores · Simulador de Sistemas Fotovoltaicos. Todos los derechos reservados. Prohibida su copia, modificación o redistribución sin autorización escrita. */
 /* Escena 3D (three.js): vivienda o nave industrial con paneles, sol con trayectoria real y sombras */
 (function () {
   'use strict';

@@ -100,4 +100,4 @@ No installation needed: open the link. To use it offline, download the whole rep
 
 ## Licencia
 
-[MIT](LICENSE)
+© 2026 Claudia Figueroa, Dennis Johan López y M.Sc. Daniel Flores. **Todos los derechos reservados.** El código se muestra solo como referencia: no se permite copiarlo, modificarlo ni redistribuirlo sin autorización escrita de los autores. Ver [LICENSE](LICENSE).

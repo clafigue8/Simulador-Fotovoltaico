@@ -1,3 +1,4 @@
+/* © 2026 Claudia Figueroa, Dennis Johan López y M.Sc. Daniel Flores · Simulador de Sistemas Fotovoltaicos. Todos los derechos reservados. Prohibida su copia, modificación o redistribución sin autorización escrita. */
 /* Inversores conectados a red: parámetros del modelo de Sandia (King et al., 2007) de la base de datos CEC
    (California Energy Commission), distribuida con SAM (NREL) y pvlib-python, versión 2019-03-05. */
 window.INVERTERS_GRID=[
