@@ -55,7 +55,7 @@
             <div class="field wide"><label>${L('Correo (opcional, solo si quieres respuesta)', 'Email (optional, only if you want a reply)')}</label><input id="fbMail" type="email" maxlength="120"></div>
           </div>
           <input id="fbHp" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
-          <p class="fbpriv">${L('Tu correo nunca se publica. Algunos comentarios, con tu nombre si lo escribiste, pueden mostrarse en el sitio después de revisarlos.', 'Your email is never published. Some comments, with your name if you wrote it, may be shown on the site after review.')}</p>
+          <p class="fbpriv">${L('Tu correo nunca se publica y solo se usa para responderte. Algunos comentarios, con tu nombre si lo escribiste, pueden mostrarse en el sitio después de revisarlos. Los mensajes se guardan hasta 12 meses.', 'Your email is never published and is only used to reply to you. Some comments, with your name if you wrote it, may be shown on the site after review. Messages are kept for up to 12 months.')} <a href="legal.html#privacidad">${L('Aviso de privacidad', 'Privacy notice')}</a></p>
           <div class="btns"><button class="btn pri" id="fbSend">${L('Enviar', 'Send')}</button><span id="fbOk" class="fbmsg"></span></div>
         </div>
         <div class="card"><h3>${L('Lo que dicen los usuarios', 'What users say')}</h3><div id="fbPub"><p class="revnone">${L('Cargando…', 'Loading…')}</p></div></div>

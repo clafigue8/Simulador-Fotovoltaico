@@ -2,6 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://www.gstatic.com https://fonts.googleapis.com https://fonts.gstatic.com https://api.open-meteo.com https://archive-api.open-meteo.com https://power.larc.nasa.gov; frame-src https://*.firebaseapp.com https://accounts.google.com https://apis.google.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Simulador Fotovoltaico Honduras · Diseña tu sistema de paneles solares</title>
 <meta name="description" content="Simulador de paneles solares para Honduras: calcula cuántos paneles necesitas, el inversor, el ahorro en tu factura de la ENEE, la normativa de la CREE y el retorno de la inversión. Vista 3D, clima real y análisis financiero.">
@@ -40,7 +42,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:wght@400;600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:wght@400;600&display=swap"></noscript>
-<link rel="stylesheet" href="assets/css/app.css?v=202611281000">
+<link rel="stylesheet" href="assets/css/app.css?v=202611281200">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('tema')||'light'}catch(e){document.documentElement.dataset.theme='light'}</script>
 </head>
 <body>
@@ -97,13 +99,13 @@
 <script defer src="assets/js/sim.js?v=202611212029"></script>
 <script defer src="assets/js/charts.js?v=202611230000"></script>
 <script defer src="assets/js/scene3d.js?v=202611262200"></script>
-<script defer src="assets/js/home.js?v=202611262200"></script>
-<script defer src="assets/js/finance.js?v=2"></script>
+<script defer src="assets/js/home.js?v=202611281200"></script>
+<script defer src="assets/js/finance.js?v=3"></script>
 <script defer src="assets/js/grid.js?v=202611262100"></script>
 <script defer src="assets/js/install.js?v=202611212140"></script>
 <script defer src="assets/js/store.js?v=3"></script>
-<script defer src="assets/js/feedback.js?v=3"></script>
-<script defer src="assets/js/ui.js?v=202611262200"></script>
+<script defer src="assets/js/feedback.js?v=4"></script>
+<script defer src="assets/js/ui.js?v=202611281200"></script>
 <script>if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => { }));</script>
 </body>
 </html>
